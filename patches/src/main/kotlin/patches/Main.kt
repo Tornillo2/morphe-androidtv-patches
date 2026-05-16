@@ -1,7 +1,8 @@
 package patches
 
 import patches.core.PatchContext
-import patches.androidtv.HideAdsPatch
+import patches.androidtv.paramount.ParamountPatch
+import patches.androidtv.disney.DisneyPatch
 
 fun main() {
 
@@ -9,8 +10,15 @@ fun main() {
 
     val context = PatchContext()
 
-    println("Running patch: ${HideAdsPatch.name}")
-    HideAdsPatch.execute(context)
+    // Run Paramount+ patch
+    println("Running patch: ${ParamountPatch.name}")
+    ParamountPatch.execute(context)
+    println()
 
-    println("\nDone.")
+    // Run Disney+ patch
+    println("Running patch: ${DisneyPatch.name}")
+    DisneyPatch.execute(context)
+    println()
+
+    println("Done.")
 }
