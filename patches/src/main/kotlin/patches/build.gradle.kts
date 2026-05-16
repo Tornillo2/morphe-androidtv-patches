@@ -1,5 +1,6 @@
 plugins {
-    kotlin("jvm") version "1.9.2
+    kotlin("jvm") version "1.9.22"
+    application
 }
 
 repositories {
@@ -8,4 +9,8 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
+}
+
+application {
+    mainClass.set("patches.MainKt")
 }
