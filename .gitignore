@@ -1,0 +1,8 @@
+# Gradle build folders
+.gradle/
+build/
+patches/build/
+
+# OS junk
+.DS_Store
+Thumbs.db
