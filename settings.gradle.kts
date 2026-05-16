@@ -1,3 +1,3 @@
 rootProject.name = "morphe-androidtv-patches"
 
-include(":patches
+include(":patches")
