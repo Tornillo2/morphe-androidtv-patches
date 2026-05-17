@@ -6,6 +6,7 @@ import patches.androidtv.paramount.ParamountFingerprint
 
 object ParamountPatch : Patch() {
 
+    override val id = "paramount-androidtv"
     override val name = "Paramount+ Hide Ads"
     override val description = "Disables IMA ad loading in Paramount+"
 
