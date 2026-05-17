@@ -15,6 +15,7 @@ import patches.core.PatchContext
 
 object DisneyPatch : Patch() {
 
+    override val id = "disney-androidtv"
     override val name = "Disney+ Disable Ads"
     override val description = "Disables ad insertion methods in Disney+"
 
