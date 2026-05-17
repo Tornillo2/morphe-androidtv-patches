@@ -4,7 +4,11 @@ import java.io.File
 
 object PatchLoader {
 
-    fun loadPatchIds(): List<String> {
+    private const val TARGET_APP = "com.disney.disneyplus"
+    // Change this to test Paramount:
+    // private const val TARGET_APP = "com.paramountplus.android"
+
+    fun loadPatches(): List<Patch> {
         val file = File("../patches-list.json")
 
         if (!file.exists()) {
@@ -14,26 +18,41 @@ object PatchLoader {
 
         val content = file.readText()
 
-        val regex = """"id"\s*:\s*"([^"]+)"""".toRegex()
+        val idRegex = """"id"\s*:\s*"([^"]+)"""".toRegex()
+        val enabledRegex = """"enabled"\s*:\s*(true|false)""".toRegex()
+        val targetRegex = """"targetPackage"\s*:\s*"([^"]+)"""".toRegex()
 
-        return regex.findAll(content)
-            .map { it.groupValues[1] }
-            .toList()
-    }
+        val ids = idRegex.findAll(content).map { it.groupValues[1] }.toList()
+        val enabledFlags = enabledRegex.findAll(content).map { it.groupValues[1].toBoolean() }.toList()
+        val targets = targetRegex.findAll(content).map { it.groupValues[1] }.toList()
 
-    fun loadPatches(): List<Patch> {
-        val ids = loadPatchIds()
+        val patches = mutableListOf<Patch>()
 
-        if (ids.isEmpty()) {
-            println("No patches found in JSON")
-        }
+        for (i in ids.indices) {
 
-        return ids.mapNotNull { id ->
+            val id = ids[i]
+            val enabled = enabledFlags.getOrNull(i) ?: false
+            val target = targets.getOrNull(i) ?: ""
+
+            if (!enabled) {
+                println("Skipping '$id' (disabled)")
+                continue
+            }
+
+            if (target != TARGET_APP) {
+                println("Skipping '$id' (not for target app)")
+                continue
+            }
+
             val patch = PatchRegistry.getPatchById(id)
-            if (patch == null) {
+
+            if (patch != null) {
+                patches.add(patch)
+            } else {
                 println("Warning: No patch found for id '$id'")
             }
-            patch
         }
+
+        return patches
     }
 }
