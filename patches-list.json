@@ -1,22 +1,12 @@
-{
-  "patches": [
-    {
-      "id": "paramount-androidtv",
-      "name": "Paramount+ Android TV",
-      "description": "Disables IMA ad loading in Paramount+",
-      "category": "androidtv",
-      "targetPackage": "com.paramountplus.android",
-      "enabled": true,
-      "package": "patches.androidtv.paramount.ParamountPatch"
-    },
-    {
-      "id": "disney-androidtv",
-      "name": "Disney+ Android TV",
-      "description": "Disables ad insertion in Disney+",
-      "category": "androidtv",
-      "targetPackage": "com.disney.disneyplus",
-      "enabled": true,
-      "package": "patches.androidtv.disney.DisneyPatch"
-    }
-  ]
-}
+[
+  {
+    "name": "Paramount+ Android TV",
+    "description": "Disables IMA ad loading in Paramount+",
+    "class": "app.morphe.patches.paramount.ParamountPatch"
+  },
+  {
+    "name": "Disney+ Android TV",
+    "description": "Disables ad insertion in Disney+",
+    "class": "app.morphe.patches.disney.DisneyPatch"
+  }
+]
