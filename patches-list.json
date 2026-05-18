@@ -2,11 +2,11 @@
   {
     "name": "Paramount+ Android TV",
     "description": "Disables IMA ad loading in Paramount+",
-    "class": "app.morphe.patches.paramount.ParamountPatch"
+    "package": "patches.androidtv.paramount.ParamountPatch"
   },
   {
     "name": "Disney+ Android TV",
     "description": "Disables ad insertion in Disney+",
-    "class": "app.morphe.patches.disney.DisneyPatch"
+    "package": "patches.androidtv.disney.DisneyPatch"
   }
 ]
