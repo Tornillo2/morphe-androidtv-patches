@@ -1,6 +1,6 @@
 /*
  * Credit:
- * Original work by RookieEnough
+ * Original work by RookieEnough aka The G.O.A.T :)
  *
  * Forked from:
  * https://gitlab.com/ReVanced/revanced-patches/-/blob/main/patches/src/main/kotlin/app/revanced/patches/disneyplus/ads/Fingerprints.kt
@@ -16,6 +16,7 @@ import app.morphe.patcher.PatchContext
 object DisneyPatch : Patch(
     name = "Disney+ Android TV",
     description = "Disables ad insertion in Disney+"
+    compatibilities = listOf(AppCompatibilities.DISNEY_PLUS_TV)
 ) {
 
     override fun execute(context: PatchContext) {
