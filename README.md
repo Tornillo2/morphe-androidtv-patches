@@ -15,7 +15,7 @@ I'm just like you, I enjoy watching TV and movies without being bored and annoye
 
 **This patch is built and tested against Paramount+ v16.8 only.**
 
-Applying this patch to any other version — especially v16.x — will fail or produce an unstable result.
+Applying this patch to any other version — especially v16.11 — will fail or produce an unstable result.
 
 ### Why v16.8?
 
