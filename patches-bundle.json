@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-05-18T17:14:41",
-  "description": "## [1.1.1](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.1.0...v1.1.1) (2026-05-18)\n\n\n### Bug Fixes\n\n* resolve Gradle credentials for publish step ([0a3e95b](https://github.com/ajstrick81/morphe-androidtv-patches/commit/0a3e95b0b595453727c6496c7a08a16e440e3494))\n\n\nRelease v1.1.1",
-  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.1.1/patches-1.1.1.mpp",
+  "created_at": "2026-05-18T17:26:52",
+  "description": "## [1.1.2](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.1.1...v1.1.2) (2026-05-18)\n\n\n### Bug Fixes\n\n* trigger release with Gradle credentials fix ([26459d4](https://github.com/ajstrick81/morphe-androidtv-patches/commit/26459d44339e1dc5e541c1afb1981decea348639))\n\n\nRelease v1.1.2",
+  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.1.2/patches-1.1.2.mpp",
   "signature_download_url": "",
-  "version": "1.1.1"
+  "version": "1.1.2"
 }
