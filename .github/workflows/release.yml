@@ -36,9 +36,13 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
+      - name: Write Gradle credentials
+        run: |
+          mkdir -p ~/.gradle
+          echo "gpr.user=${{ github.actor }}" >> ~/.gradle/gradle.properties
+          echo "gpr.key=${{ secrets.MORPHE_PACKAGES_TOKEN }}" >> ~/.gradle/gradle.properties
+
       - name: Build patch artifact
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew :patches:buildAndroid generatePatchesList clean
 
       - name: Build and Release
