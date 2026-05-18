@@ -42,7 +42,7 @@ jobs:
           echo "gpr.user=${{ github.actor }}" >> ~/.gradle/gradle.properties
           echo "gpr.key=${{ secrets.MORPHE_PACKAGES_TOKEN }}" >> ~/.gradle/gradle.properties
 
-       - name: Verify credentials file
+      - name: Verify credentials file
         run: |
           echo "=== gradle.properties exists ==="
           ls -la ~/.gradle/gradle.properties
