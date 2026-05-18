@@ -4,5 +4,4 @@ plugins {
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation(libs.morphe.patcher)
 }
