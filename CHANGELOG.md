@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.3.0...v1.3.1) (2026-05-19)
+
+
+### Bug Fixes
+
+* return null from ImaSdkFactory.zzb to prevent AdsLoader creation ([71d02aa](https://github.com/ajstrick81/morphe-androidtv-patches/commit/71d02aab549dd01bc00176b3af0e9f32f8f43c50))
+
 # [1.3.0](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.2.0...v1.3.0) (2026-05-19)
 
 
