@@ -23,8 +23,8 @@ val paramountPatch = bytecodePatch(
         imaSdkFactoryFingerprint.method.addInstructions(
             0,
             """
-                const/4 p2, 0x0
-                const/4 p2, 0x0
+                const/4 v0, 0x0
+                return-object v0
             """.trimIndent(),
         )
     }
