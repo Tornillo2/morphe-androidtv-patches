@@ -1,10 +1,18 @@
 package app.morphe.patches.shared.compat
 
-import app.morphe.patcher.patch.options.CompatiblePackages
+import app.morphe.patcher.patch.Compatibility
 
-val AppCompatibilities = object {
-    val PEACOCK_TV = CompatiblePackages("com.peacocktv.peacockandroid")
-    val PEACOCK_TV_ANDROID_TV = PEACOCK_TV
-    val PARAMOUNT_TV = CompatiblePackages("com.cbs.ott")
-    val DISNEY_PLUS_TV = CompatiblePackages("com.disney.disneyplus")
+object AppCompatibilities {
+
+    val PARAMOUNT_TV = Compatibility(
+        name = "Paramount+ (Android TV)",
+        packageName = "com.cbs.ott",
+        appIconColor = 0x0064FF,
+    )
+
+    val DISNEY_PLUS_TV = Compatibility(
+        name = "Disney+ (Android TV)",
+        packageName = "com.disney.disneyplus",
+        appIconColor = 0x113CCF,
+    )
 }
