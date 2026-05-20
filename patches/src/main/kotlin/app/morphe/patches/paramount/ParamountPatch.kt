@@ -1,9 +1,8 @@
 package app.morphe.patches.paramount
 
-import app.morphe.patches.shared.compat.AppCompatibilities
-import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
-import app.morphe.patcher.fingerprint
+import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patches.shared.compat.AppCompatibilities
 
 @Suppress("unused")
 val paramountPatch = bytecodePatch(
@@ -12,15 +11,8 @@ val paramountPatch = bytecodePatch(
 ) {
     compatibleWith(AppCompatibilities.PARAMOUNT_TV)
 
-    val imaSdkFactoryFingerprint = fingerprint {
-        custom { method, _ ->
-            method.definingClass == "Lcom/google/ads/interactivemedia/v3/api/ImaSdkFactory;" &&
-                method.name == "zzb"
-        }
-    }
-
     execute {
-        imaSdkFactoryFingerprint.method.addInstructions(
+        ImaSdkFactoryFingerprint.method.addInstructions(
             0,
             """
                 const/4 v0, 0x0
