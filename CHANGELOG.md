@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.0...v1.4.1) (2026-05-24)
+
+
+### Bug Fixes
+
+* Update returnType in ImaSdkFactoryFingerprint ([ed7ed27](https://github.com/ajstrick81/morphe-androidtv-patches/commit/ed7ed2744626527d2755ca426d0555fdc37a8b41))
+
 # [1.4.0](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.3.1...v1.4.0) (2026-05-24)
 
 
