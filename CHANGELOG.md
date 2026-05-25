@@ -1,3 +1,10 @@
+## [1.4.8](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.7...v1.4.8) (2026-05-25)
+
+
+### Bug Fixes
+
+* Refactor Fingerprints for ad request and timeline builders ([506a49c](https://github.com/ajstrick81/morphe-androidtv-patches/commit/506a49cde31a23c1a284445edfe2888d17dd5ea6))
+
 ## [1.4.7](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.6...v1.4.7) (2026-05-25)
 
 
