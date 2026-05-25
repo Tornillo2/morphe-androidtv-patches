@@ -1,5 +1,5 @@
 {
-  "version": "1.4.5",
+  "version": "1.4.6",
   "appNames": {
     "com.disney.disneyplus": "Disney+ Android TV",
     "com.wbd.stream": "HBO Max",
@@ -31,8 +31,8 @@
       "options": []
     },
     {
-      "name": "HBO Max - Disable Ads",
-      "description": "Suppresses nonlinear overlay ads, SSAI linear ad timeline registration, GMSS/AdSparx ad break construction, and live stream preroll ad timeline entry generation.",
+      "name": "Max - Disable Ads",
+      "description": "Suppresses nonlinear overlay ads (Bolt), SSAI linear ad timeline registration (GMSS/AdSparx), and live stream preroll ad timeline entry generation for all content types.",
       "use": true,
       "dependencies": [],
       "compatiblePackages": {

@@ -1,3 +1,10 @@
+## [1.4.6](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.5...v1.4.6) (2026-05-25)
+
+
+### Bug Fixes
+
+* Refactor HBOAdsPatch for clarity and efficiency ([2a47b14](https://github.com/ajstrick81/morphe-androidtv-patches/commit/2a47b14538e338e83f7e06edd8bada1afc44975f))
+
 ## [1.4.5](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.4...v1.4.5) (2026-05-25)
 
 
