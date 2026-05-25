@@ -22,6 +22,6 @@ object AppCompatibilities {
     name = "HBO Max",
     packageName = "com.wbd.stream",
     appIconColor = 0xFFFFFF,
-    targets = listOf(AppTarget("6.17.1.4")),
+    targets = listOf(AppTarget("7.2.0.41")),
     )
 }
