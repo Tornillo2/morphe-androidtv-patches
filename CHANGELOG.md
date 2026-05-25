@@ -1,3 +1,10 @@
+## [1.4.7](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.6...v1.4.7) (2026-05-25)
+
+
+### Bug Fixes
+
+* Modify BoltNonLinearAdsRequest fingerprint for JSON key ([fb28017](https://github.com/ajstrick81/morphe-androidtv-patches/commit/fb28017b792ed5b0278df849e58206578f0ee6d6))
+
 ## [1.4.6](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.5...v1.4.6) (2026-05-25)
 
 

@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-05-25T14:14:23",
-  "description": "## [1.4.6](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.5...v1.4.6) (2026-05-25)\n\n\n### Bug Fixes\n\n* Refactor HBOAdsPatch for clarity and efficiency ([2a47b14](https://github.com/ajstrick81/morphe-androidtv-patches/commit/2a47b14538e338e83f7e06edd8bada1afc44975f))",
-  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.6/patches-1.4.6.mpp",
+  "created_at": "2026-05-25T14:34:17",
+  "description": "## [1.4.7](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.6...v1.4.7) (2026-05-25)\n\n\n### Bug Fixes\n\n* Modify BoltNonLinearAdsRequest fingerprint for JSON key ([fb28017](https://github.com/ajstrick81/morphe-androidtv-patches/commit/fb28017b792ed5b0278df849e58206578f0ee6d6))",
+  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.7/patches-1.4.7.mpp",
   "signature_download_url": "",
-  "version": "1.4.6"
+  "version": "1.4.7"
 }
