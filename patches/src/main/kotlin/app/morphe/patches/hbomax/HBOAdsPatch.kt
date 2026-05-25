@@ -7,52 +7,27 @@ import com.android.tools.smali.dexlib2.Opcode
 
 @Suppress("unused")
 val hboAdsPatch = bytecodePatch(
-    name = "HBO Max - Disable Ads",
-    description = "Suppresses nonlinear overlay ads, SSAI linear ad timeline " +
-        "registration, GMSS/AdSparx ad break construction, and live stream " +
-        "preroll ad timeline entry generation.",
+    name = "Max - Disable Ads",
+    description = "Suppresses nonlinear overlay ads (Bolt), SSAI linear ad " +
+        "timeline registration (GMSS/AdSparx), and live stream preroll ad " +
+        "timeline entry generation for all content types.",
 ) {
     compatibleWith(AppCompatibilities.HBO_TV)
 
     execute {
 
         // ─────────────────────────────────────────────────────────────────────
-        // Patch 1: BoltNonLinearAdsRequest.getAdRequestType()
-        // Return empty string — was missing method name and had wrong register
-        // count in original smali causing NPE on @NotNull callers.
-        // ─────────────────────────────────────────────────────────────────────
-        BoltNonLinearAdsRequestGetAdRequestTypeFingerprint.method.addInstructions(
-            0,
-            """
-                const-string v0, ""
-                return-object v0
-            """.trimIndent(),
-        )
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Patch 2: BoltNonLinearAdsRequest.getPlaybackId()
-        // Return empty string — original returned const/4 0x0 (null) which
-        // NPEs on @NotNull callers.
-        // ─────────────────────────────────────────────────────────────────────
-        BoltNonLinearAdsRequestGetPlaybackIdFingerprint.method.addInstructions(
-            0,
-            """
-                const-string v0, ""
-                return-object v0
-            """.trimIndent(),
-        )
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Patch 3: BoltNonLinearAdsRequest.write$Self()
+        // Patch 1: BoltNonLinearAdsRequest.write$Self()
         // Suppress advertisingInfo (field index 2) from the serialized JSON
-        // body — omitting the key avoids NPE in the kotlinx.serialization
-        // encoder. Replace playbackId (field index 5) with empty string.
-        // Fields 0/1/3/4/6 kept intact so the Bolt server returns a graceful
-        // empty/4xx response rather than a hard crash.
+        // body entirely — omitting the key avoids NPE in the kotlinx
+        // serialization encoder. Replace playbackId (field index 5) with
+        // empty string. Fields 0/1/3/4/6 kept intact so the Bolt server
+        // returns a graceful empty/4xx rather than a hard crash.
+        // Note: getAdRequestType and getPlaybackId getters are R8-inlined
+        // in this version and cannot be targeted directly — write$Self is
+        // the correct suppression point at the serialization layer.
         // ─────────────────────────────────────────────────────────────────────
         BoltNonLinearAdsRequestWriteSelfFingerprint.method.apply {
-            val instructions = implementation!!.instructions.toList()
-            // Clear and rewrite entire method body
             implementation!!.instructions.clear()
             addInstructions(
                 0,
@@ -85,7 +60,7 @@ val hboAdsPatch = bytecodePatch(
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // Patch 4: BoltDynamicAdFetcher$fetchNonLinearAds$1.invokeSuspend()
+        // Patch 2: BoltDynamicAdFetcher$fetchNonLinearAds$1.invokeSuspend()
         // Insert const/4 v8, 0x0 immediately after move-result-object v8
         // following the fetchNonLinearAds call. Discards the real ad list
         // before it reaches the coroutine collector — null != COROUTINE_SUSPENDED
@@ -107,9 +82,10 @@ val hboAdsPatch = bytecodePatch(
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // Patch 5: SsaiInfoTimelineBuilder.buildAdBreaksFromAdSparxAdBreaks()
-        // return-void at entry — suppresses all SSAI ad break timeline
-        // registration for VOD/movies. .locals 16 untouched.
+        // Patch 3: SsaiInfoTimelineBuilder.buildAdBreaksFromAdSparxAdBreaks()
+        // return-void at entry suppresses all SSAI ad break timeline
+        // registration for VOD/movies. .locals 16 untouched — execution
+        // never reaches any instruction that uses those slots.
         // ─────────────────────────────────────────────────────────────────────
         SsaiInfoTimelineBuilderBuildAdBreaksFingerprint.method.addInstructions(
             0,
@@ -117,7 +93,7 @@ val hboAdsPatch = bytecodePatch(
         )
 
         // ─────────────────────────────────────────────────────────────────────
-        // Patch 6: SsaiInfoTimelineBuilder.access$buildAdBreaksFromAdSparxAdBreaks()
+        // Patch 4: SsaiInfoTimelineBuilder.access$buildAdBreaksFromAdSparxAdBreaks()
         // Synthetic accessor used by buildTimeline inner lambdas. Clear and
         // return-void so the lambda call path is also suppressed.
         // ─────────────────────────────────────────────────────────────────────
@@ -127,11 +103,12 @@ val hboAdsPatch = bytecodePatch(
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // Patch 7: GenerateLiveTimelineEntriesForAdBreakKt.generateLiveTimelineEntriesForAdBreak()
+        // Patch 5: GenerateLiveTimelineEntriesForAdBreakKt.generateLiveTimelineEntriesForAdBreak()
         // Return empty ArrayList instead of building AdBreakEntry/AdEntry
         // objects. The caller (generateLiveTimelineEntries) does addAll() on
-        // the result — empty list means no ad entries are added to the live
+        // the result — empty list means no ad entries added to the live
         // timeline while chapter/content entries are built normally.
+        // Suppresses "1 of 2" countdown prerolls on live and episodic TV.
         // ─────────────────────────────────────────────────────────────────────
         GenerateLiveTimelineEntriesForAdBreakFingerprint.method.apply {
             implementation!!.instructions.clear()
