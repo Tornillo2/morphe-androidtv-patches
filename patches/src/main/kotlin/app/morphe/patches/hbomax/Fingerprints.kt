@@ -74,3 +74,10 @@ internal object GenerateLiveTimelineEntriesForAdBreakFingerprint : Fingerprint(
             method.name == "generateLiveTimelineEntriesForAdBreak"
     },
 )
+
+internal object NowtilusEnabledFingerprint : Fingerprint(
+    custom = { method, _ ->
+        method.definingClass == "Lcom/mediamelon/core/qubit/ep/RegisterAPI;" &&
+            method.name == "isNowtilusEnabled"
+    },
+)
