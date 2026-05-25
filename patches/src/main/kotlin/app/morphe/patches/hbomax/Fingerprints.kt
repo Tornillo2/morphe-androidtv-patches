@@ -4,13 +4,12 @@ import app.morphe.patcher.Fingerprint
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BoltNonLinearAdsRequest — Nonlinear (overlay) ad request serializer
-// classes4.dex — kotlinx.serialization descriptor string survives R8.
-// write$Self is the serialization write path — suppresses advertisingInfo
-// (field index 2) and zeroes playbackId (field index 5) from the JSON body.
+// classes4.dex — "advertisingInfo" is a required JSON key in write$Self,
+// survives R8, and is unique to the serializer write path for this class.
 // ─────────────────────────────────────────────────────────────────────────────
 
 internal object BoltNonLinearAdsRequestWriteSelfFingerprint : Fingerprint(
-    strings = listOf("com.wbd.adtech.bolt.BoltNonLinearAdsRequest"),
+    strings = listOf("advertisingInfo"),
     custom = { method, _ ->
         method.definingClass == "Lcom/wbd/adtech/bolt/BoltNonLinearAdsRequest;" &&
             method.name == "write\$Self"
