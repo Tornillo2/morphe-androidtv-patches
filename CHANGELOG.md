@@ -1,3 +1,10 @@
+## [1.4.5](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.4...v1.4.5) (2026-05-25)
+
+
+### Bug Fixes
+
+* Fix typo in SSAI parsing failure string ([38c04a6](https://github.com/ajstrick81/morphe-androidtv-patches/commit/38c04a6962b3b275b23d9f0fe4419dc3f9fe8c09))
+
 ## [1.4.4](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.3...v1.4.4) (2026-05-25)
 
 
