@@ -85,5 +85,23 @@ val hboAdsPatch = bytecodePatch(
             0,
             "return-void",
         )
+        
+        // ─────────────────────────────────────────────────────────────────────────────
+        // NowtilusEnabledFingerprint — MediaMelon Nowtilus SSAI plugin kill switch
+        // classes4.dex — static boolean getter, exact class and method name sufficient.
+        // isNowtilusEnabled() reads the static isNowtilus field set by setMMConfig()
+        // from the server registration response. Returning false here prevents the
+        // Nowtilus SSAI plugin from initializing regardless of what the server sends —
+        // the getter is the read point so the field value is irrelevant. Suppresses
+        // skippable prerolls on live and episodic content that route through the
+        // MediaMelon/Nowtilus CDN-level ad stitching pipeline rather than AdSparx.
+        // ─────────────────────────────────────────────────────────────────────────────
+        NowtilusEnabledFingerprint.method.addInstructions(
+            0,
+            """
+                const/4 v0, 0x0
+                return v0
+            """.trimIndent(),
+         )
     }
 }
