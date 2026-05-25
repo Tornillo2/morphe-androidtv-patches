@@ -50,7 +50,7 @@ internal object BoltDynamicAdFetcherInvokeSuspendFingerprint : Fingerprint(
 // ─────────────────────────────────────────────────────────────────────────────
 
 internal object SsaiInfoTimelineBuilderBuildAdBreaksFingerprint : Fingerprint(
-    strings = listOf("GssSsaiInfo Parsing failed. Emitting empty timeline with indefinite range"),
+    strings = listOf("GSsaiInfo Parsing failed. Emitting empty timeline with indefinite range"),
     custom = { method, _ ->
         method.name == "buildAdBreaksFromAdSparxAdBreaks"
     },
