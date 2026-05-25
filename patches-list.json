@@ -1,8 +1,9 @@
 {
-  "version": "1.4.1",
+  "version": "1.4.2",
   "appNames": {
-    "com.disney.disneyplus": "Disney+",
-    "com.cbs.ott": "Paramount+"
+    "com.disney.disneyplus": "Disney+ Android TV",
+    "com.hbo.hbonow": "HBO Max",
+    "com.cbs.ott": "Paramount+ Android TV"
   },
   "patches": [
     {
@@ -15,13 +16,39 @@
       },
       "compatibility": [
         {
-          "name": "Disney+",
+          "name": "Disney+ Android TV",
           "packageName": "com.disney.disneyplus",
           "description": null,
           "appIconColor": 1129679,
           "targets": [
             {
               "version": "",
+              "experimental": false
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "HBO Max - Disable Ads",
+      "description": "Suppresses nonlinear overlay ads, SSAI linear ad timeline registration, GMSS/AdSparx ad break construction, and live stream preroll ad timeline entry generation.",
+      "use": true,
+      "dependencies": [],
+      "compatiblePackages": {
+        "com.hbo.hbonow": [
+          "6.17.1.4"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "HBO Max",
+          "packageName": "com.hbo.hbonow",
+          "description": null,
+          "appIconColor": 16777215,
+          "targets": [
+            {
+              "version": "6.17.1.4",
               "experimental": false
             }
           ]
@@ -41,7 +68,7 @@
       },
       "compatibility": [
         {
-          "name": "Paramount+",
+          "name": "Paramount+ Android TV",
           "packageName": "com.cbs.ott",
           "description": null,
           "appIconColor": 25855,

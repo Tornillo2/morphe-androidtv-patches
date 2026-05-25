@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.1...v1.4.2) (2026-05-25)
+
+
+### Bug Fixes
+
+* Update AppCompatibilities.kt to include HBOmax ([99bee43](https://github.com/ajstrick81/morphe-androidtv-patches/commit/99bee43fc262767c630cd293e5d286d4fe317b0d))
+
 ## [1.4.1](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.0...v1.4.1) (2026-05-24)
 
 
