@@ -2,10 +2,13 @@ package ajstrick81.morphe.patches.primevideo.misc.permissions
 
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.resourcePatch
-import app.morphe.util.asSequence
-import app.morphe.util.getNode
 import ajstrick81.morphe.patches.primevideo.shared.Constants
 import org.w3c.dom.Element
+
+// Note: app.morphe.util.asSequence and app.morphe.util.getNode are not
+// available in Morphe 1.3.0 (they are part of morphe-patches-library which
+// is not a dependency in this project). This patch uses standard Java DOM
+// APIs instead, which are always available in the patcher environment.
 
 @Suppress("unused")
 val renamePermissionsPatch = resourcePatch(
@@ -29,19 +32,21 @@ val renamePermissionsPatch = resourcePatch(
 
     execute {
         document("AndroidManifest.xml").use { document ->
-            val manifest = document.getNode("manifest") as Element
+            // documentElement is always the root <manifest> element.
+            val manifest = document.documentElement as Element
+            val permissionNodes = manifest.getElementsByTagName("permission")
 
-            val permissions = manifest
-                .getElementsByTagName("permission")
-                .asSequence()
-                .map { Pair(it as Element, it.getAttribute("android:name")) }
-                .filter { (_, name) -> name in permissionNames }
-
-            if (permissions.none()) throw PatchException("Could not find any permissions to rename")
-
-            permissions.forEach { (element, name) ->
-                element.setAttribute("android:name", "revanced.$name")
+            var found = false
+            for (i in 0 until permissionNodes.length) {
+                val element = permissionNodes.item(i) as Element
+                val name = element.getAttribute("android:name")
+                if (name in permissionNames) {
+                    element.setAttribute("android:name", "revanced.$name")
+                    found = true
+                }
             }
+
+            if (!found) throw PatchException("Could not find any permissions to rename")
         }
     }
 }
