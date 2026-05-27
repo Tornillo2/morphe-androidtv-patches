@@ -24,21 +24,26 @@ val skipAdsPatch = bytecodePatch(
         //   p1 = ImmutableMap<Object, AdPlaybackState>   ← we transform this
         //   p2 = Timeline
         //
-        // We call our extension before the original logic runs. The extension
-        // iterates every AdPlaybackState in the map and calls withSkippedAdGroup(i)
-        // for each active group index, returning a new ImmutableMap. We then
-        // replace p1 with the transformed map so the original validation loop
-        // and handler-post proceed with all groups already marked skipped.
+        // invoke-static/range is used instead of invoke-static because
+        // setAdPlaybackStates() has enough local variables that p1 maps to
+        // a register above v15 (v17 was reported in the patch log). Standard
+        // invoke-static only supports registers v0-v15 (4-bit encoding).
+        // invoke-static/range supports the full 16-bit register space and
+        // uses {pN .. pN} syntax to specify a single-register range.
         //
-        // The original validation checks isServerSideInserted == true on each
-        // AdGroup. withSkippedAdGroup() calls AdGroup.withAllAdsSkipped() which
-        // only sets AD_STATE_SKIPPED on each ad — it does not touch
-        // isServerSideInserted — so validation passes cleanly.
+        // The extension iterates every AdPlaybackState in the map and calls
+        // withSkippedAdGroup(i) for each active group index, returning a new
+        // ImmutableMap with all groups marked skipped. Replacing p1 here means
+        // the original validation loop and handler-post see only skipped groups.
+        //
+        // withSkippedAdGroup() calls AdGroup.withAllAdsSkipped() which sets
+        // AD_STATE_SKIPPED on each ad without touching isServerSideInserted,
+        // so the SSAI validation in the original method continues to pass.
         // ─────────────────────────────────────────────────────────────────────
         SetAdPlaybackStatesMedia3Fingerprint.method.addInstructions(
             0,
             """
-                invoke-static { p1 }, Lajstrick81/morphe/extension/primevideo/ads/SkipAdsPatch;->skipAllMedia3AdGroups(Lcom/google/common/collect/ImmutableMap;)Lcom/google/common/collect/ImmutableMap;
+                invoke-static/range {p1 .. p1}, Lajstrick81/morphe/extension/primevideo/ads/SkipAdsPatch;->skipAllMedia3AdGroups(Lcom/google/common/collect/ImmutableMap;)Lcom/google/common/collect/ImmutableMap;
                 move-result-object p1
             """
         )
@@ -50,15 +55,14 @@ val skipAdsPatch = bytecodePatch(
         //   p0 = this (ServerSideAdInsertionMediaSource)
         //   p1 = ImmutableMap<Object, AdPlaybackState>   ← we transform this
         //
-        // Same strategy as Patch 1 but targeting the ExoPlayer2 variant inside
-        // the bundled GMS Ads SDK. The ExoPlayer2 AdPlaybackState API is
-        // structurally identical — same withSkippedAdGroup(int) contract,
-        // same removedAdGroupCount / adGroupCount fields.
+        // Same invoke-static/range fix applied for the same reason — the
+        // ExoPlayer2 variant is inside the GMS Ads SDK (classes3.dex) and
+        // may have the same high-register layout.
         // ─────────────────────────────────────────────────────────────────────
         SetAdPlaybackStatesExo2Fingerprint.method.addInstructions(
             0,
             """
-                invoke-static { p1 }, Lajstrick81/morphe/extension/primevideo/ads/SkipAdsPatch;->skipAllExo2AdGroups(Lcom/google/common/collect/ImmutableMap;)Lcom/google/common/collect/ImmutableMap;
+                invoke-static/range {p1 .. p1}, Lajstrick81/morphe/extension/primevideo/ads/SkipAdsPatch;->skipAllExo2AdGroups(Lcom/google/common/collect/ImmutableMap;)Lcom/google/common/collect/ImmutableMap;
                 move-result-object p1
             """
         )
