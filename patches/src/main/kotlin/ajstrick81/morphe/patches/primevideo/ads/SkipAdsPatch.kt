@@ -27,18 +27,19 @@ val skipAdsPatch = bytecodePatch(
         //   invoke-direct {v0, p0, v1}, ExoPlayerImpl-><init>(...)
         //   return-object v0       ← we insert before this
         //
-        // We locate the RETURN_OBJECT instruction and insert our capturePlayer
-        // call immediately before it, passing v0 (the freshly built Player).
-        // The register holding the return value is read dynamically so this
-        // survives any future register layout changes in the build() method.
+        // We locate the RETURN_OBJECT instruction by iterating the instruction
+        // list manually (indexOfFirstInstructionOrThrow is not available in
+        // Morphe 1.3.0). The register holding the return value is read
+        // dynamically so this survives any future register layout changes.
         //
-        // capturePlayer() stores the instance in a static WeakReference in
-        // the extension, giving the skipAll methods a live Player handle for
+        // capturePlayer() stores the instance in a static WeakReference in the
+        // extension, giving the skipAll methods a live Player handle for
         // subsequent setPlaybackParameters() calls during ad breaks.
         // ─────────────────────────────────────────────────────────────────────
         ExoPlayerBuilderBuildFingerprint.method.apply {
-            val returnIndex = indexOfFirstInstructionOrThrow {
-                opcode == Opcode.RETURN_OBJECT
+            val instructions = implementation!!.instructions.toList()
+            val returnIndex = instructions.indexOfFirst {
+                it.opcode == Opcode.RETURN_OBJECT
             }
             val playerRegister = getInstruction<OneRegisterInstruction>(returnIndex).registerA
             addInstructions(
@@ -58,19 +59,13 @@ val skipAdsPatch = bytecodePatch(
         //   p2 = Timeline
         //
         // skipAllMedia3AdGroups() does two things atomically:
-        //   1. Iterates every AdPlaybackState and calls withSkippedAdGroup(i)
-        //      for each active group, returning a new ImmutableMap with all
-        //      groups marked AD_STATE_SKIPPED before ExoPlayer sees them.
-        //   2. Detects whether ad groups were present in the incoming map and
-        //      calls setPlaybackParameters(8x) if yes, or resets to 1.0x if
-        //      no groups remain — creating the speed ramp effect for any ads
-        //      that are stitched into the stream and not fully eliminated by
-        //      the group-skip logic alone (e.g. pre-roll SGAI segments).
+        //   1. Marks every active ad group as AD_STATE_SKIPPED via
+        //      withSkippedAdGroup(i) before ExoPlayer sees the map.
+        //   2. Detects whether groups were present and ramps ExoPlayer to
+        //      8x speed (or resets to 1.0x) via the captured Player ref.
         //
-        // invoke-static/range handles the high register number (p1 maps to v17+
-        // in this method due to its large local variable count). Standard
-        // invoke-static only supports v0-v15 (4-bit encoding); /range uses the
-        // full 16-bit register space.
+        // invoke-static/range handles the high register number — p1 maps to
+        // v17+ in this method due to its large local variable count.
         // ─────────────────────────────────────────────────────────────────────
         SetAdPlaybackStatesMedia3Fingerprint.method.addInstructions(
             0,
