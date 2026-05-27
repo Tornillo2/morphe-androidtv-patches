@@ -4,17 +4,17 @@ import app.morphe.patcher.Fingerprint
 import com.android.tools.smali.dexlib2.AccessFlags
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Primary target — media3 (androidx.media3)
+// Primary target — media3 SSAI ad schedule entry point
 // classes.dex / smali/androidx/media3/exoplayer/source/ads/
 //
-// This is the entry point called by the Ignite native layer (libignite.so +
-// downloaded JS bundle) when it pushes the SSAI ad schedule into ExoPlayer.
-// The ImmutableMap carries one AdPlaybackState per period UID, each containing
-// the full set of AdGroups with their timing, duration, and individual ad URIs.
+// Called by the Ignite native layer (libignite.so + downloaded JS bundle)
+// when it pushes the SSAI ad schedule into ExoPlayer. The ImmutableMap
+// carries one AdPlaybackState per period UID, each containing the full set
+// of AdGroups with their timing, duration, and individual ad URIs.
 //
 // Intercepting here — before the states are validated, posted to the playback
 // Handler, and written into SharedMediaPeriod.adPlaybackState — is the
-// earliest and cleanest point to nullify all ad groups.
+// earliest and cleanest point to nullify all ad groups AND trigger speed ramp.
 // ─────────────────────────────────────────────────────────────────────────────
 object SetAdPlaybackStatesMedia3Fingerprint : Fingerprint(
     definingClass = "Landroidx/media3/exoplayer/source/ads/ServerSideAdInsertionMediaSource;",
@@ -28,12 +28,11 @@ object SetAdPlaybackStatesMedia3Fingerprint : Fingerprint(
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Secondary target — ExoPlayer2 (com.google.android.exoplayer2)
+// Secondary target — ExoPlayer2 SSAI ad schedule entry point
 // classes3.dex / smali_classes3/com/google/android/exoplayer2/source/ads/
 //
 // The ExoPlayer2 SSAI source is bundled inside the Google Mobile Ads SDK
-// (GMS Ads, 527 classes in classes3.dex). It may handle ad insertion for
-// overlay/companion ads distinct from the main streaming pipeline.
+// (GMS Ads, 527 classes in classes3.dex). Same transformation applied.
 // The ExoPlayer2 variant takes only the ImmutableMap — no Timeline parameter.
 // ─────────────────────────────────────────────────────────────────────────────
 object SetAdPlaybackStatesExo2Fingerprint : Fingerprint(
@@ -43,5 +42,33 @@ object SetAdPlaybackStatesExo2Fingerprint : Fingerprint(
         "Lcom/google/common/collect/ImmutableMap;"
     ),
     returnType = "V",
+    accessFlags = listOf(AccessFlags.PUBLIC)
+)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Player capture target — ExoPlayer.Builder.build()
+// classes.dex / smali/androidx/media3/exoplayer/ExoPlayer$Builder.smali
+//
+// Called once per playback session by MediaPipelineBackendEngine when it
+// constructs the ExoPlayer instance. Returns ExoPlayerImpl which implements
+// the ExoPlayer interface and exposes setPlaybackParameters(PlaybackParameters).
+//
+// We intercept the return value and store it in a static WeakReference in our
+// extension. This gives the skipAll methods a live Player handle to call
+// setPlaybackParameters() on when ad breaks are detected or cleared.
+//
+// Using build() rather than a field hook because:
+//   - It fires exactly once per player lifecycle (no duplicate captures)
+//   - The return value is the fully initialised Player, ready to accept calls
+//   - No traversal of MediaPipelineBackendEngine -> player field chain needed
+//
+// WeakReference ensures the Player is not kept alive past its natural lifecycle
+// if MediaPipelineBackendEngine is destroyed and recreated between content items.
+// ─────────────────────────────────────────────────────────────────────────────
+object ExoPlayerBuilderBuildFingerprint : Fingerprint(
+    definingClass = "Landroidx/media3/exoplayer/ExoPlayer\$Builder;",
+    name = "build",
+    parameters = listOf(),
+    returnType = "Landroidx/media3/exoplayer/ExoPlayer;",
     accessFlags = listOf(AccessFlags.PUBLIC)
 )
