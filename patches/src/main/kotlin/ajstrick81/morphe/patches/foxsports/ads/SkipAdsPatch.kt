@@ -4,8 +4,13 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.bytecodePatch
 import ajstrick81.morphe.patches.foxsports.shared.Constants
 
+// Note: val is named foxSportsSkipAdsPatch to avoid a top-level name conflict
+// with ajstrick81.morphe.patches.tubi.ads.skipAdsPatch. Kotlin does not allow
+// two top-level vals with the same name within the same compiled module even
+// when they are in different packages.
+
 @Suppress("unused")
-val skipAdsPatch = bytecodePatch(
+val foxSportsSkipAdsPatch = bytecodePatch(
     name = "Skip ads",
     description = "Suppresses Yospace SSAI ad events from reaching FoxPlayer and unlocks fast-forward during ad breaks.",
 ) {
@@ -58,9 +63,9 @@ val skipAdsPatch = bytecodePatch(
         // Effect: users can freely fast-forward through any ad break positions
         // on both VOD and live streams without seeing a restriction message.
         //
-        // The handleRewindSeek equivalent is intentionally NOT patched — rewind
-        // restriction during live ads is a safety mechanism to prevent users
-        // from rewinding into ad content that has already been reported as viewed.
+        // handleRewindSeek is intentionally NOT patched — rewind restriction
+        // during live ads is a safety mechanism to prevent rewinding into ad
+        // content that has already been reported as viewed.
         // ─────────────────────────────────────────────────────────────────────
         YospaceSeekPolicySetFFFingerprint.method.addInstructions(
             0,
