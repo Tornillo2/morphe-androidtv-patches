@@ -40,13 +40,13 @@ For Paramount+
 4. Apply the patch in Morphe Manager
 
 For Disney+
-1. Go to https://www.apkmirror.com and search for Disney+ v26-6-0rc5-2026-04-21 (Android TV)
+1. Go to https://www.apkmirror.com and search for Disney+ v26.6.0rc5.2026.04.21 (Android TV)
 2. Download the `.apkm` file
 3. Select the apkm in Morphe Manager
 4. Apply the patch in Morphe Manager
 
 For HBO MAX
-1. Go to https://www.apkmirror.com and search for HBO MAX v-7-2-0-41 (Android TV)
+1. Go to https://www.apkmirror.com and search for HBO MAX v7.2.0.41 (Android TV)
 2. Download the `.apkm` file
 3. Select the apkm in Morphe Manager
 4. Apply the patch in Morphe Manager
