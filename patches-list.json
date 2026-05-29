@@ -1,12 +1,12 @@
 {
-  "version": "1.4.19",
+  "version": "1.4.20",
   "appNames": {
     "com.foxsports.android": "Fox Sports",
     "com.peacocktv.peacockandroid": "Peacock TV Android TV",
     "com.amazon.amazonvideo.livingroom": "Prime Video",
     "com.tubitv": "Tubi Android TV",
     "com.disney.disneyplus": "Disney+ Android TV",
-    "com.wbd.stream": "HBO Max Android TV",
+    "com.wbd.hbomax": "HBO Max Android TV",
     "com.cbs.ott": "Paramount+ Android TV"
   },
   "patches": [
@@ -42,14 +42,14 @@
       "use": true,
       "dependencies": [],
       "compatiblePackages": {
-        "com.wbd.stream": [
+        "com.wbd.hbomax": [
           "7.2.0.41"
         ]
       },
       "compatibility": [
         {
           "name": "HBO Max Android TV",
-          "packageName": "com.wbd.stream",
+          "packageName": "com.wbd.hbomax",
           "description": null,
           "appIconColor": 16777215,
           "targets": [
@@ -196,7 +196,7 @@
     },
     {
       "name": "Skip ads",
-      "description": "Prevents IMA DAI ad events from reaching FoxPlayer, suppressing all ad breaks.",
+      "description": "Eliminates all Tubi ad types: blocks IMA DAI mid-roll and post-roll events from reaching FoxPlayer, prevents the IMA AdsManager from priming the cold-launch pre-roll, and suppresses the pause-screen image overlay ad.",
       "use": true,
       "dependencies": [],
       "compatiblePackages": {
