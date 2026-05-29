@@ -7,7 +7,7 @@ import ajstrick81.morphe.patches.tubi.shared.Constants
 @Suppress("unused")
 val skipAdsPatch = bytecodePatch(
     name = "Skip ads",
-    description = "Prevents IMA DAI ad events from reaching FoxPlayer, suppressing all ad breaks.",
+    description = "Eliminates all Tubi ad types: blocks IMA DAI mid-roll and post-roll events from reaching FoxPlayer, prevents the IMA AdsManager from priming the cold-launch pre-roll, and suppresses the pause-screen image overlay ad.",
 ) {
     compatibleWith(Constants.COMPATIBILITY)
 
@@ -16,24 +16,9 @@ val skipAdsPatch = bytecodePatch(
         // ─────────────────────────────────────────────────────────────────────
         // Hook 1 — FoxImaAdListeners.adEventListener_delegate$lambda$10$lambda$9
         //
-        // Every Google IMA ad event (AD_BREAK_STARTED, AD_STARTED, AD_POD_START,
-        // AD_PROGRESS, AD_COMPLETED, AD_BREAK_ENDED, etc.) flows through this
-        // one method before reaching FoxPlayer.dispatchAdEvent().
-        //
-        // Inserting return-void at index 0 means FoxPlayer never receives any
-        // ad event — no AD_BREAK_STARTED triggers playback lock, no AD_STARTED
-        // triggers ad rendering, no AD_POD_START initiates the ad break sequence.
-        //
-        // The IMA StreamManager continues running internally inside the Google
-        // IMA SDK, meaning the DAI stream URL remains valid and content segments
-        // are served normally. Only the ad event dispatch is silenced.
-        //
-        // This is the Fox One equivalent approach — Fox Corporation reuses
-        // FoxPlayer and FoxImaAdListeners across Tubi, Fox One, Fox Sports, and
-        // other Fox properties. The same fingerprint likely applies to all of them.
-        //
-        // Note: returnEarly() from app.morphe.util is not available in Morphe
-        // 1.3.0. We insert return-void directly via addInstructions at index 0.
+        // PRIMARY mid-roll/post-roll suppression. Every IMA ad event flows
+        // through this single method before FoxPlayer.dispatchAdEvent().
+        // return-void at index 0 silences all ad events for the session.
         // ─────────────────────────────────────────────────────────────────────
         FoxImaAdEventListenerFingerprint.method.addInstructions(
             0,
@@ -43,23 +28,54 @@ val skipAdsPatch = bytecodePatch(
         )
 
         // ─────────────────────────────────────────────────────────────────────
-        // Hook 2 — FoxPlayer.clearVodAds()
+        // Hook 2 — FoxImaAdListeners.adsLoadedListener_delegate$lambda$4$lambda$3
         //
-        // FoxPlayer's built-in clearVodAds() method clears the VOD ad schedule.
-        // We hook its entry point to also call our extension which nulls the
-        // IMA StreamManager reference in FoxImaAdListeners via reflection.
+        // COLD LAUNCH PRE-ROLL suppression. This is the only call site for
+        // BaseManager.init(), which primes the IMA timeline and fires the
+        // initial AD_BREAK_STARTED for the pre-roll.
         //
-        // This covers the edge case where ad break metadata was pre-loaded into
-        // FoxPlayer's timeline before Hook 1 fired. Amplifying the clear at this
-        // natural call site ensures no pre-scheduled ad positions remain.
+        // return-void at index 0 prevents init() from being called.
+        // The DAI content stream URL is unaffected — it was already delivered
+        // via requestVODDAIUrl → ImaStreamUrlCallback before this fires.
+        // ─────────────────────────────────────────────────────────────────────
+        FoxImaAdsLoadedListenerFingerprint.method.addInstructions(
+            0,
+            """
+                return-void
+            """
+        )
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Hook 3 — FoxPlayer.clearVodAds()
         //
-        // If clearVodAds() is not called during normal playback flow this hook
-        // is a silent no-op — Hook 1 is the primary suppression mechanism.
+        // Belt-and-suspenders: calls our extension to null the IMA
+        // StreamManager reference in FoxImaAdListeners via reflection,
+        // ensuring no stale IMA session survives across content transitions.
+        // Silent no-op if clearVodAds() is not called during normal flow.
         // ─────────────────────────────────────────────────────────────────────
         FoxPlayerClearVodAdsFingerprint.method.addInstructions(
             0,
             """
                 invoke-static { p0 }, Lajstrick81/morphe/extension/tubi/ads/SkipAdsPatch;->onClearVodAds(Ljava/lang/Object;)V
+            """
+        )
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Hook 4 — ImagePauseAds.l(VideoApi, long)
+        //
+        // PAUSE AD suppression. Tubi's pause-screen image overlay is driven
+        // by a completely separate ad system from IMA — Hooks 1–3 have no
+        // effect on it. l() is the entry point that launches the coroutine
+        // fetching and displaying the creative.
+        //
+        // return-void at index 0 prevents the coroutine from ever being
+        // created. The pause screen renders normally without the ad overlay.
+        // No impression or tracking events fire.
+        // ─────────────────────────────────────────────────────────────────────
+        TubiPauseAdsFingerprint.method.addInstructions(
+            0,
+            """
+                return-void
             """
         )
     }
