@@ -1,3 +1,10 @@
+## [1.4.18](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.17...v1.4.18) (2026-05-29)
+
+
+### Bug Fixes
+
+* push Update SkipAdsPatch.kt to test Peacock ([903c74d](https://github.com/ajstrick81/morphe-androidtv-patches/commit/903c74d68a5462ecd14cd98c4dc10958fd27dfc4))
+
 ## [1.4.17](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.16...v1.4.17) (2026-05-28)
 
 
