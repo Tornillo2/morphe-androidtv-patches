@@ -120,44 +120,39 @@ val skipAdsPatch = bytecodePatch(
         // ─────────────────────────────────────────────────────────────────────
         // Hook 7 — xo/C$c.shouldInterceptRequest(WebView, WebResourceRequest)
         //
-        // WEBVIEW PRE-ROLL ROOT CAUSE suppression. This is the architectural
-        // keystone that all other hooks missed.
+        // WEBVIEW PRE-ROLL ROOT CAUSE suppression. Full architectural detail
+        // is in Fingerprints.kt. Short version: Tubi is a hybrid app, the SPA
+        // drives the pre-roll entirely in JavaScript, and this is the only
+        // native interception point that reaches the WebView network layer.
         //
-        // Tubi is a hybrid app. The SPA at ott-androidtv.tubitv.com runs inside
-        // TubiWebView and drives the ENTIRE pre-roll lifecycle in JavaScript.
-        // ExoPlayer is not involved — it only initialises AFTER the pre-roll ends,
-        // when the SPA calls startNativePlayer() to hand off to native playback.
-        // Hooks 1–6 all target Java classes and have zero effect on JS-driven ads.
+        // IMPLEMENTATION: straight-line code only — no labels, no branches.
         //
-        // xo/C$c is TvWebFragment$TubiWebClient (R8-minified). It extends
-        // WebViewClient and Android calls shouldInterceptRequest() for every
-        // network request the WebView makes — including the SPA's ad requests.
+        // Morphe's addInstructions does NOT support conditional branches or
+        // labels in injected snippets. Any if-eqz/if-nez with a label target
+        // produces bytecode that fails ART's DEX verifier at class load time,
+        // crashing the app before launch (confirmed: v1.4.22 total failure).
         //
-        // We call TubiAdBlocker.shouldBlock(p2) first. If the request URL's
-        // host matches a blocked ad domain, it returns an empty 200
-        // WebResourceResponse and we return that immediately. If not, we fall
-        // through to the existing LocalAssetsLoader (yo/b) logic unchanged.
+        // Fix exploits Android's shouldInterceptRequest() null contract:
+        //   return non-null WebResourceResponse → intercept (block) request
+        //   return null                         → pass through, Android handles normally
         //
-        // Blocked domains confirmed via AGP DNS test:
-        //   dai.google.com, imasdk.googleapis.com, googletagmanager.com,
-        //   doubleclick.net, googlesyndication.com
+        // TubiAdBlocker.shouldBlock() already returns null for non-ad domains,
+        // so we return its result directly with zero branching required:
         //
-        // v0 = return value from TubiAdBlocker.shouldBlock()
-        // if v0 is non-null (blocked), return it immediately
-        // if v0 is null (not blocked), fall through to original code
+        //   shouldBlock() → empty WebResourceResponse  = ad domain, request blocked
+        //   shouldBlock() → null                       = not ad, Android handles normally
         //
-        // Note: registers 10 total in this method. v0–v7 are free at index 0
-        // before the original code uses them.
+        // The original yo/b (LocalAssetsLoader) is bypassed. yo/b only handles
+        // local asset paths and returns null for all external URLs — functionally
+        // identical to our null pass-through. The async coroutine xo/C$c$a
+        // (page navigation analytics) is also skipped; not required for playback.
         // ─────────────────────────────────────────────────────────────────────
         TubiWebClientInterceptFingerprint.method.addInstructions(
             0,
             """
                 invoke-static {p2}, Lajstrick81/morphe/extension/tubi/ads/TubiAdBlocker;->shouldBlock(Landroid/webkit/WebResourceRequest;)Landroid/webkit/WebResourceResponse;
                 move-result-object v0
-                if-eqz v0, :no_block
                 return-object v0
-                :no_block
-                nop
             """
         )
     }
