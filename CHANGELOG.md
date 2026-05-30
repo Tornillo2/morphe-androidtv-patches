@@ -1,3 +1,10 @@
+## [1.4.24](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.23...v1.4.24) (2026-05-30)
+
+
+### Bug Fixes
+
+* Update method invocation in SkipAdsPatch.kt to avoid app crash on startup ([8bd5c84](https://github.com/ajstrick81/morphe-androidtv-patches/commit/8bd5c84e2dc44a3cfdf36b2a828ec4bbda9cb04a))
+
 ## [1.4.23](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.22...v1.4.23) (2026-05-30)
 
 
