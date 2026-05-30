@@ -1,3 +1,10 @@
+## [1.4.26](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.25...v1.4.26) (2026-05-30)
+
+
+### Bug Fixes
+
+* Change default namespace for extensions ([d4b6334](https://github.com/ajstrick81/morphe-androidtv-patches/commit/d4b63344b26ecaf15cb7ba1903789ac33664afd0))
+
 ## [1.4.25](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.24...v1.4.25) (2026-05-30)
 
 
