@@ -124,3 +124,76 @@ object TubiPauseAdsFingerprint : Fingerprint(
     returnType = "V",
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL)
 )
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hook 5 — FoxImaStreamIdLoader.requestVODDAIUrl(String, Boolean, ImaStreamUrlCallback)
+// classes7.dex / com/fox/android/video/player/api/ima/loaders/
+//
+// This is the method that initiates the Google DAI stream request for VOD
+// content. When called, it constructs a StreamRequest via
+// ImaSdkFactory.createVodStreamRequest(), sets ad tag parameters, registers
+// the AdsLoadedListener and AdErrorListener, then calls
+// AdsLoader.requestStream() — which reaches out to dai.google.com to obtain
+// a DAI-stitched HLS stream URL with the pre-roll physically embedded at
+// position 0.
+//
+// The stitched stream is what survives Hooks 1–4. Because the pre-roll video
+// segment is baked into the HLS manifest before FoxPlayer ever sees the URL,
+// no IMA event hook can remove it — the player simply plays what's there.
+//
+// DNS-level blocking of dai.google.com (confirmed via AGP test) eliminates
+// the pre-roll because:
+//   - The DAI stream request fails
+//   - ImaStreamUrlCallback.onFailure() is triggered
+//   - Tubi falls back to a non-stitched direct content URL
+//   - Content plays clean with no embedded pre-roll
+//
+// This hook replicates that DNS block in bytecode:
+//   - Call p3.onFailure("dai_blocked") to trigger Tubi's fallback path
+//   - return-void to prevent the DAI request from ever being made
+//
+// The onFailure() call is essential — without it, the callback is never
+// invoked and Tubi hangs waiting for a stream URL that never arrives.
+//
+// p1 = adTagUrl (String)
+// p2 = forceRefresh (Boolean)
+// p3 = ImaStreamUrlCallback (callback to deliver stream URL to FoxPlayer)
+//
+// No extension needed — pure smali with const-string + invoke-interface.
+// ─────────────────────────────────────────────────────────────────────────────
+object FoxImaVodStreamRequestFingerprint : Fingerprint(
+    definingClass = "Lcom/fox/android/video/player/api/ima/loaders/FoxImaStreamIdLoader;",
+    name = "requestVODDAIUrl",
+    parameters = listOf(
+        "Ljava/lang/String;",
+        "Ljava/lang/Boolean;",
+        "Lcom/fox/android/video/player/loaders/ImaStreamIdLoader\$ImaStreamUrlCallback;"
+    ),
+    returnType = "V",
+    accessFlags = listOf(AccessFlags.PUBLIC)
+)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hook 6 — FoxImaStreamIdLoader.requestImaStreamId(String, Boolean, ImaStreamIdCallback)
+// classes7.dex / com/fox/android/video/player/api/ima/loaders/
+//
+// Live stream equivalent of Hook 5. Uses createPodStreamRequest() instead of
+// createVodStreamRequest() but follows the same pattern — constructs a
+// StreamRequest and calls AdsLoader.requestStream() to obtain a DAI-stitched
+// live stream. Included for completeness; Tubi is primarily VOD so Hook 5
+// covers the common case.
+//
+// Same intercept pattern: call p3.onFailure("dai_blocked") then return-void.
+// p3 = ImaStreamIdCallback
+// ─────────────────────────────────────────────────────────────────────────────
+object FoxImaLiveStreamRequestFingerprint : Fingerprint(
+    definingClass = "Lcom/fox/android/video/player/api/ima/loaders/FoxImaStreamIdLoader;",
+    name = "requestImaStreamId",
+    parameters = listOf(
+        "Ljava/lang/String;",
+        "Ljava/lang/Boolean;",
+        "Lcom/fox/android/video/player/loaders/ImaStreamIdLoader\$ImaStreamIdCallback;"
+    ),
+    returnType = "V",
+    accessFlags = listOf(AccessFlags.PUBLIC)
+)
