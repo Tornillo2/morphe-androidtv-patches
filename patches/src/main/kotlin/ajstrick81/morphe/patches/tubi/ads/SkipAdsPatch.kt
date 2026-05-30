@@ -136,7 +136,11 @@ val skipAdsPatch = bytecodePatch(
         //   return non-null WebResourceResponse → intercept (block) request
         //   return null                         → pass through, Android handles normally
         //
-        // TubiAdBlocker.shouldBlock() already returns null for non-ad domains,
+        // The smali calls shouldBlock(Object)Object because Morphe extensions cannot
+        // import android.* types. ART's verifier requires the return type match
+        // the method declaration (WebResourceResponse), so check-cast bridges the
+        // Object return to the declared type. When shouldBlock() returns null,
+        // check-cast on null is a no-op — ART allows casting null to any type.
         // so we return its result directly with zero branching required:
         //
         //   shouldBlock() → empty WebResourceResponse  = ad domain, request blocked
@@ -152,6 +156,7 @@ val skipAdsPatch = bytecodePatch(
             """
                 invoke-static {p2}, Lajstrick81/morphe/extension/tubi/ads/SkipAdsPatch;->shouldBlock(Ljava/lang/Object;)Ljava/lang/Object;
                 move-result-object v0
+                check-cast v0, Landroid/webkit/WebResourceResponse;
                 return-object v0
             """
         )
