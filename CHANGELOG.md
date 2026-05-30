@@ -1,3 +1,11 @@
+## [1.4.27](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.26...v1.4.27) (2026-05-30)
+
+
+### Bug Fixes
+
+* Add ad suppression hooks for Tubi video player ([13b66fa](https://github.com/ajstrick81/morphe-androidtv-patches/commit/13b66fa1a4b5d62e5e6ef9beb4a6257c4ae904e7))
+* Implement comprehensive ad suppression mechanisms ([421f039](https://github.com/ajstrick81/morphe-androidtv-patches/commit/421f0391c5b6d4179f550560d0fea757e2a158b2))
+
 ## [1.4.26](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.25...v1.4.26) (2026-05-30)
 
 
