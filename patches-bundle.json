@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-05-30T13:47:39",
-  "description": "## [1.4.24](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.23...v1.4.24) (2026-05-30)\n\n\n### Bug Fixes\n\n* Update method invocation in SkipAdsPatch.kt to avoid app crash on startup ([8bd5c84](https://github.com/ajstrick81/morphe-androidtv-patches/commit/8bd5c84e2dc44a3cfdf36b2a828ec4bbda9cb04a))",
-  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.24/patches-1.4.24.mpp",
+  "created_at": "2026-05-30T14:14:15",
+  "description": "## [1.4.25](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.24...v1.4.25) (2026-05-30)\n\n\n### Bug Fixes\n\n* Fix check-cast for shouldBlock return type to stop app crash ([090bbc0](https://github.com/ajstrick81/morphe-androidtv-patches/commit/090bbc0a049a2d5ff9741ade374c69594a9342ca))",
+  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.25/patches-1.4.25.mpp",
   "signature_download_url": "",
-  "version": "1.4.24"
+  "version": "1.4.25"
 }

@@ -1,3 +1,10 @@
+## [1.4.25](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.24...v1.4.25) (2026-05-30)
+
+
+### Bug Fixes
+
+* Fix check-cast for shouldBlock return type to stop app crash ([090bbc0](https://github.com/ajstrick81/morphe-androidtv-patches/commit/090bbc0a049a2d5ff9741ade374c69594a9342ca))
+
 ## [1.4.24](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.23...v1.4.24) (2026-05-30)
 
 
