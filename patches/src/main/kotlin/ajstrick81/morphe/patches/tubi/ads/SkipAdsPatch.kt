@@ -163,7 +163,12 @@ val skipAdsPatch = bytecodePatch(
         //                             license.adrise.tv = ad DRM). Confirmed via AGH query log
         //                             as the fallback serving the surviving 20-30s pre-roll
         //                             when all Google domains are blocked.
-        //   ads.production-public.tubi.io — Tubi's ad config/orchestration server
+        //   ads.production-public.tubi.io          — Tubi's ad config/orchestration server
+        //   rainmaker.production-public.tubi.io  — Tubi's ad decision/VAST manifest server.
+        //                                          Confirmed via AGH query log as the fallback
+        //                                          orchestration endpoint when ads.production
+        //                                          is blocked. Fires before every impression
+        //                                          burst and returns ark.tubi.video ad URLs.
         // ─────────────────────────────────────────────────────────────────────
         TubiWebClientInterceptFingerprint.method.addInstructions(
             0,
@@ -200,6 +205,10 @@ val skipAdsPatch = bytecodePatch(
                 move-result v3
                 if-nez v3, :intercept_block
                 const-string v2, "ads.production-public.tubi.io"
+                invoke-virtual {v1, v2}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+                move-result v3
+                if-nez v3, :intercept_block
+                const-string v2, "rainmaker.production-public.tubi.io"
                 invoke-virtual {v1, v2}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
                 move-result v3
                 if-nez v3, :intercept_block
