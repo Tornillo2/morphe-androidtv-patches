@@ -1,6 +1,7 @@
 package ajstrick81.morphe.patches.foxone.ads
 
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 
 val foxOneSkipAdsPatch = bytecodePatch(
     name = "Skip ads",
