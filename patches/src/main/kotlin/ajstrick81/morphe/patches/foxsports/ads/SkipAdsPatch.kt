@@ -1,46 +1,24 @@
-package ajstrick81.morphe.patches.foxone.ads
+package ajstrick81.morphe.patches.foxsports.ads
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.bytecodePatch
 
 @Suppress("unused")
-val foxOneSkipAdsPatch = bytecodePatch(
+val foxSportsSkipAdsPatch = bytecodePatch(
     name = "Skip ads",
-    description = "Suppresses all ad delivery systems in Fox One Android TV: intercepts Google IMA DAI stream requests for VOD, silences IMA ad event and AdsManager listeners, and suppresses Yospace SSAI ad and slate events for live content.",
+    description = "Suppresses all ad delivery systems in Fox Sports Android TV: intercepts Google IMA DAI stream requests for VOD, silences IMA ad event and AdsManager listeners, and suppresses Yospace SSAI ad and slate events for live content.",
 ) {
 
     execute {
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Hook 1 — FoxImaAdListeners.adEventListener_delegate$lambda$10$lambda$9
-        //
-        // Every IMA ad event (AD_BREAK_STARTED, AD_STARTED, AD_PROGRESS,
-        // AD_COMPLETED, etc.) flows through this lambda before FoxPlayer.
-        // return-void at index 0 silences all ad events for the session.
-        // Primary suppression for all VOD IMA-driven ads.
-        // ─────────────────────────────────────────────────────────────────────
         FoxImaAdEventListenerFingerprint.method.addInstructions(
             0, "return-void"
         )
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Hook 2 — FoxImaAdListeners.adsLoadedListener_delegate$lambda$4$lambda$3
-        //
-        // Blocks IMA AdsManager initialisation — prevents imaStreamManager.init()
-        // from priming the ad timeline and triggering the initial AD_BREAK_STARTED.
-        // Pre-roll suppression backstop alongside Hook 1.
-        // ─────────────────────────────────────────────────────────────────────
         FoxImaAdsLoadedListenerFingerprint.method.addInstructions(
             0, "return-void"
         )
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Hook 3 — FoxPlayer.clearVodAds()
-        //
-        // Nulls out VOD ad state fields at index 0 before the original clear
-        // logic runs. Prevents stale IMA sessions from reactivating ad delivery
-        // across content transitions.
-        // ─────────────────────────────────────────────────────────────────────
         FoxPlayerClearVodAdsFingerprint.method.addInstructions(
             0,
             """
@@ -51,15 +29,6 @@ val foxOneSkipAdsPatch = bytecodePatch(
             """
         )
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Hook 4 — FoxImaStreamIdLoader.requestVODDAIUrl(String, Boolean, ImaStreamUrlCallback)
-        //
-        // Intercepts Google DAI VOD stream request before it goes out.
-        // Calls onFailure("dai_blocked") to trigger Fox One's fallback to a
-        // clean non-stitched stream, then returns void.
-        //
-        // p3 = ImaStreamUrlCallback
-        // ─────────────────────────────────────────────────────────────────────
         FoxImaVodStreamRequestFingerprint.method.addInstructions(
             0,
             """
@@ -69,13 +38,6 @@ val foxOneSkipAdsPatch = bytecodePatch(
             """
         )
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Hook 5 — FoxImaStreamIdLoader.requestImaStreamId(String, Boolean, ImaStreamIdCallback)
-        //
-        // Live stream equivalent of Hook 4. Same intercept pattern.
-        //
-        // p3 = ImaStreamIdCallback
-        // ─────────────────────────────────────────────────────────────────────
         FoxImaLiveStreamRequestFingerprint.method.addInstructions(
             0,
             """
@@ -85,36 +47,14 @@ val foxOneSkipAdsPatch = bytecodePatch(
             """
         )
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Hook 6 — YospaceAnalyticEventObserver.dispatchAdEvent(FoxAdEvent)
-        //
-        // LIVE CONTENT — Silences the Yospace ad event coroutine launcher.
-        // Every Yospace ad lifecycle event flows through here before FoxPlayer.
-        // Prevents FoxPlayer from entering ad-locked mode during live sports/
-        // news content. Complement to AGP Yospace parameter stripping rules.
-        // ─────────────────────────────────────────────────────────────────────
         YospaceDispatchAdEventFingerprint.method.addInstructions(
             0, "return-void"
         )
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Hook 7 — YospaceAnalyticEventObserver.dispatchSlateEvent(FoxSlateEvent)
-        //
-        // LIVE CONTENT — Silences Yospace slate events (black screen placeholders
-        // during live ad breaks). Blocks alongside Hook 6 to suppress both
-        // creatives and slate placeholders during live playback.
-        // ─────────────────────────────────────────────────────────────────────
         YospaceDispatchSlateEventFingerprint.method.addInstructions(
             0, "return-void"
         )
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Hook 8 — YospaceSeekablePlaybackPolicyHandler.setHandleFastForwardSeek
-        //
-        // LIVE CONTENT — Nulls out Yospace's fast-forward seek policy handler.
-        // Without this, the scrub bar locks during Yospace ad breaks even when
-        // Hooks 6–7 prevent ad rendering — seek policy is a separate code path.
-        // ─────────────────────────────────────────────────────────────────────
         YospaceSeekPolicyFingerprint.method.addInstructions(
             0, "return-void"
         )
