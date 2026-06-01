@@ -2,12 +2,15 @@ package ajstrick81.morphe.patches.foxone.ads
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.bytecodePatch
+import ajstrick81.morphe.patches.foxone.shared.Constants
 
 @Suppress("unused")
 val foxOneSkipAdsPatch = bytecodePatch(
     name = "Skip ads",
     description = "Suppresses all ad delivery systems in Fox One Android TV.",
 ) {
+    compatibleWith(Constants.COMPATIBILITY)
+
     execute {
         FoxImaAdEventListenerFingerprint.method.addInstructions(0, "return-void")
         FoxImaAdsLoadedListenerFingerprint.method.addInstructions(0, "return-void")
