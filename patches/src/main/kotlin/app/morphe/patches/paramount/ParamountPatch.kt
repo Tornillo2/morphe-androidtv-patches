@@ -30,7 +30,7 @@ val paramountPatch = bytecodePatch(
     name = "Paramount+ Android TV",
     description = "Removes VOD ads and pause ads.",
 ) {
-    compatibleWith(AppCompatibilities.PARAMOUNT_PLUS_TV)
+    compatibleWith(AppCompatibilities.PARAMOUNT_TV)
 
     execute {
         // ------------------------------------------------------------------
