@@ -1,3 +1,13 @@
+## [1.4.38](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.37...v1.4.38) (2026-06-02)
+
+
+### Bug Fixes
+
+* push new version through update of SkipAdsPatch.kt ([f58ac6b](https://github.com/ajstrick81/morphe-androidtv-patches/commit/f58ac6be345a9589f05f43d127d427eca512edb9))
+* pushing new version by updating Fingerprints.kt ([ab4ba28](https://github.com/ajstrick81/morphe-androidtv-patches/commit/ab4ba28d2266e2851aaa8f5cc41ca92cef79099e))
+* Refactor Fingerprints.kt package and imports ([e39c4d6](https://github.com/ajstrick81/morphe-androidtv-patches/commit/e39c4d626b6261c529a89cf6dfb78d1e7205279d))
+* Rename package in Fingerprints.kt ([4f6bd18](https://github.com/ajstrick81/morphe-androidtv-patches/commit/4f6bd18da4714f42140a956d4c9a4458eb99409a))
+
 ## [1.4.37](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.36...v1.4.37) (2026-06-02)
 
 

@@ -1,11 +1,12 @@
 {
-  "version": "1.4.37",
+  "version": "1.4.38",
   "appNames": {
     "com.fox.foxone": "Fox One Android TV",
     "com.foxsports.android": "Fox Sports Android TV",
     "com.peacocktv.peacockandroid": "Peacock TV Android TV",
     "com.amazon.amazonvideo.livingroom": "Prime Video",
     "com.tubitv": "Tubi Android TV",
+    "com.univision.prendetv": "ViX Android TV",
     "com.disney.disneyplus": "Disney+ Android TV",
     "com.wbd.hbomax": "HBO Max Android TV",
     "com.cbs.ott": "Paramount+ Android TV"
@@ -240,6 +241,32 @@
           "targets": [
             {
               "version": "10.20.5000",
+              "experimental": false
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Skip ads",
+      "description": "Eliminates all ViX ad types: stubs the LuraPlayer FreeWheel and VAST/VMAP configuration constructors so no ad URLs are ever requested, forces the skip policy to its most permissive mode, prevents the Innovid SSAI overlay from mounting, and blocks advertising consent initialisation at app startup.",
+      "use": true,
+      "dependencies": [],
+      "compatiblePackages": {
+        "com.univision.prendetv": [
+          "4.46.0_tv"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "ViX Android TV",
+          "packageName": "com.univision.prendetv",
+          "description": null,
+          "appIconColor": 41193,
+          "targets": [
+            {
+              "version": "4.46.0_tv",
               "experimental": false
             }
           ]
