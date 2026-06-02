@@ -1,3 +1,10 @@
+## [1.4.35](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.34...v1.4.35) (2026-06-02)
+
+
+### Bug Fixes
+
+* Refactor DisneyPatch for clarity and updates ([b626bd1](https://github.com/ajstrick81/morphe-androidtv-patches/commit/b626bd175b1029a6dd1c0b433987c464b19167c1))
+
 ## [1.4.34](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.33...v1.4.34) (2026-06-01)
 
 
