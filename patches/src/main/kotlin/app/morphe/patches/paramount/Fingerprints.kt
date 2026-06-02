@@ -5,14 +5,23 @@
  *   v16.8.0  (versionCode 520000464) — com.cbs.ott
  *   v16.12.0 (versionCode 520000571) — com.cbs.ott
  *
- * Three patch targets:
- *   1. createVodStreamRequest (3-arg) — primary SSAI DAI call site (yk0.run())
- *   2. createVodStreamRequest (4-arg) — secondary / fallback overload
- *   3. CbsPauseWithAdsOverlay state machine — pause ad overlay renderer
+ * Active patch targets:
+ *   1. CbsPauseWithAdsOverlay state machine — pause ad overlay renderer ✅
  *
- * Live TV (createLiveStreamRequest) is intentionally NOT patched.
- * The asset key / channel ID set by that method is required to obtain
- * the stitched manifest URL — patching it kills playback entirely.
+ * VOD SSAI NOTE:
+ *   createVodStreamRequest patches have been removed. Paramount+ VOD uses
+ *   pure SSAI — the content manifest URL is returned by the DAI exchange
+ *   itself. Patching the stream request breaks playback entirely because
+ *   there is no fallback content URL. VOD ad suppression requires
+ *   intercepting the IMA StreamManager ad break event chain AFTER the
+ *   DAI exchange completes (onAdBreakStarted / StreamEvent handling).
+ *   This requires further APK analysis — tracked for next session.
+ *
+ * Live TV:
+ *   createLiveStreamRequest is intentionally NOT patched.
+ *   The asset key set by that method IS the channel identity — it is used
+ *   to obtain the stitched HLS manifest from saa.paramountplus.com.
+ *   Patching it produces a blank StreamRequest and a black screen.
  */
 
 package app.morphe.patches.paramount
@@ -20,81 +29,25 @@ package app.morphe.patches.paramount
 import app.morphe.patcher.Fingerprint
 
 // ---------------------------------------------------------------------------
-// Patch 1: createVodStreamRequest — 3-argument overload
+// Pause ad fingerprint — CbsPauseWithAdsOverlay state machine
 //
-// This is the overload called by yk0.run() (v16.12.0) / pk0.run() (v16.8.0),
-// the obfuscated DAI state machine that drives SSAI stream requests for VOD.
-//
-// Smali (both versions — byte-for-byte identical):
-//   new-instance v1, Lcom/google/ads/interactivemedia/v3/impl/zzcx;
-//   sget-object  v0, Lcom/google/ads/interactivemedia/v3/internal/zzafv;->zzd
-//   invoke-direct {v1, v0}, zzcx-><init>(zzafv)V
-//   invoke-virtual {v1, v2}, zzcx->zze(String)V   ← contentSourceId (ad param)
-//   invoke-virtual {v1, v3}, zzcx->zzf(String)V   ← videoId         (ad param)
-//   invoke-virtual {v1, v4}, zzcx->zzo(String)V   ← apiKey          (ad param)
-//   return-object v1
-//
-// Fingerprint strategy: ImaSdkFactory is fully unobfuscated (Google IMA SDK
-// public API surface). Method name is stable. Parameter count disambiguates
-// this overload from the 4-arg version.
-// ---------------------------------------------------------------------------
-
-internal object VodStreamRequest3ArgFingerprint : Fingerprint(
-    returnType = "Lcom/google/ads/interactivemedia/v3/api/StreamRequest;",
-    custom = { method, _ ->
-        method.name == "createVodStreamRequest" &&
-            method.definingClass ==
-                "Lcom/google/ads/interactivemedia/v3/api/ImaSdkFactory;" &&
-            method.parameterTypes.size == 3 &&
-            method.parameterTypes.all { it == "Ljava/lang/String;" }
-    },
-)
-
-// ---------------------------------------------------------------------------
-// Patch 2: createVodStreamRequest — 4-argument overload
-//
-// Adds a 4th setter: zzcx->zzg(String) for networkCode.
-// Called by the 5-arg StreamTrackingMode overload (which delegates here)
-// and potentially direct callers outside the main DAI state machine.
-//
-// Fingerprint: identical strategy to the 3-arg, differentiated by param count.
-// ---------------------------------------------------------------------------
-
-internal object VodStreamRequest4ArgFingerprint : Fingerprint(
-    returnType = "Lcom/google/ads/interactivemedia/v3/api/StreamRequest;",
-    custom = { method, _ ->
-        method.name == "createVodStreamRequest" &&
-            method.definingClass ==
-                "Lcom/google/ads/interactivemedia/v3/api/ImaSdkFactory;" &&
-            method.parameterTypes.size == 4 &&
-            method.parameterTypes.all { it == "Ljava/lang/String;" }
-    },
-)
-
-// ---------------------------------------------------------------------------
-// Patch 3: CbsPauseWithAdsOverlay — pause ad state machine
-//
-// This static method is the state machine dispatcher for the pause ad overlay.
+// This public static method is the sole dispatcher for the pause ad overlay.
 // It receives a sealed state object and branches on its type:
-//   - State carrying a URL  → Glide network image load → alpha fade-in to 1.0
-//   - State carrying a File → Glide local image load   → alpha fade-in to 1.0
-//   - Reset state           → calls O(0) → fade-out to alpha=0
+//   - State carrying a URL  → Glide network load → alpha fade-in to 1.0
+//   - State carrying a File → Glide local load   → sized image render
+//   - Reset state           → fade-out to alpha=0
+//   - Fallthrough           → logs "renderState: X not updating overlay."
 //
-// The method name is minified and drifts between versions:
+// The method name is minified and drifted between versions:
 //   v16.8.0  → P(CbsPauseWithAdsOverlay, uy1)V
 //   v16.12.0 → M(CbsPauseWithAdsOverlay, lz1)V
 //
-// Fingerprint strategy: anchor on the two log strings emitted in the
-// fallthrough branch — "renderState: " and " not updating overlay." —
-// which are stable developer-facing log messages unlikely to change.
-// The defining class name is partially unobfuscated (CBS/Paramount branded)
-// and used as a secondary guard.
-//
-// Package path drifted between versions:
+// Fingerprint strategy: anchor on the two stable log strings from the
+// fallthrough branch. These are developer-facing messages unlikely to
+// change across versions. Combined with endsWith() on the class name to
+// handle the package path migration between v16.8.0 and v16.12.0:
 //   v16.8.0  → Lcom/cbs/player/view/tv/CbsPauseWithAdsOverlay;
 //   v16.12.0 → Lcom/paramount/android/pplus/widgets/player/tv/view/CbsPauseWithAdsOverlay;
-//
-// Using endsWith() makes the fingerprint robust to future package migrations.
 // ---------------------------------------------------------------------------
 
 internal object PauseAdOverlayFingerprint : Fingerprint(
