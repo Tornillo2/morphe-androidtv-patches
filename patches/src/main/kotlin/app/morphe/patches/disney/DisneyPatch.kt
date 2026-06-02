@@ -58,33 +58,34 @@ val disneyPatch = bytecodePatch(
         }
 
         // ------------------------------------------------------------------
-        // Patch 3: Pause ads
+        // Patch 3: Pause ads — MediaXPauseSession.started()
         //
-        // MediaXInterstitialController.createPauseSession(MediaXPause) is
-        // the method that constructs the MediaXPauseSession and stores it
-        // in the controller's pauseSession field.
+        // PCAPdroid analysis confirmed the following pause ad sequence:
+        //   +25.52s → us-east-2.ads.digital.disneyadvertising.com (ad decision)
+        //   +26.10s → prod-frida-origin.bamgrid.com               (image fetch ← HERE)
+        //   +26.13s → AWS EC2 CDN                                  (image delivery)
+        //   +26.29s → ad.doubleclick.net                           (measurement)
         //
-        // The downstream method onPauseScheduled() already contains a null
-        // guard on that field:
+        // started() is where MediaXPause.into() is called to build the Glide
+        // render model (bv0/m), triggering the image fetch. Patching here
+        // with return-void at offset 0 prevents into() from ever being called:
         //
-        //   iget-object v2, v1, ...->pauseSession
-        //   if-eqz v2, :return_void    ← fires if pauseSession is null
-        //   getPauseScheduled().onNext(v2)
-        //     → subscriber renders pause ad overlay
+        //   - No Glide network request to prod-frida-origin.bamgrid.com
+        //   - No ad image delivered from AWS CDN
+        //   - No impression beacon to beacons.digital.disneyadvertising.com
+        //   - No DoubleClick measurement ping
+        //   - Overlay render event (getStarted().onNext()) never published
+        //   - Overlay view stays at alpha=0 for duration of pause
         //
-        // Patching strategy: return null at offset 0 of createPauseSession().
-        // pauseSession is never populated, onPauseScheduled()'s existing null
-        // guard fires on every pause event, and the overlay is never rendered.
-        //
-        // Using the framework's existing null guard as our kill switch means
-        // no risk of NPE anywhere else in the controller — clear() and other
-        // lifecycle methods all perform their own null checks on pauseSession.
+        // The ad decision request to us-east-2.ads.digital.disneyadvertising.com
+        // still fires at +25.52s (sent from upstream in the MEL layer before
+        // started() is called) — this can be suppressed at DNS level via AGH
+        // if desired, but has no visible effect since started() never renders.
         // ------------------------------------------------------------------
-        PauseAdSessionFingerprint.method.addInstructions(
+        PauseAdStartedFingerprint.method.addInstructions(
             0,
             """
-                const/4 v0, 0x0
-                return-object v0
+                return-void
             """.trimIndent(),
         )
     }
