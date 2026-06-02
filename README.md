@@ -58,4 +58,3 @@ All modifications made by Morphe, along with their dates, can be found in the Gi
 ## 📜 License
 
 ajstrick81 Morphe Patches are licensed under the [GNU General Public License v3.0](LICENSE)
-feat: initial Paramount+ ATV ad blocking patch
