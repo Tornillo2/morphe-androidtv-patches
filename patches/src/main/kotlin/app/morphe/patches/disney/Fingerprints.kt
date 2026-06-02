@@ -6,16 +6,15 @@
  * Updated for Disney+ Android TV v26.8.0+rc6 (versionCode 1779314460)
  * - InsertionGetPointsFingerprint:  VALIDATED ✅  (class + method unchanged)
  * - InsertionGetRangesFingerprint:  VALIDATED ✅  (class + method unchanged)
- * - PauseAdSessionFingerprint:      NEW ✅  targets createPauseSession() in
- *                                   MediaXInterstitialController
+ * - PauseAdStartedFingerprint:      NEW ✅  targets MediaXPauseSession.started()
  *
- * Pause ad fix v2:
- *   Previous target was onPauseScheduled() — this method already has a
- *   null guard on pauseSession and was not being matched reliably.
- *   Retargeted to createPauseSession(), which constructs and stores the
- *   MediaXPauseSession object. Returning null here means pauseSession is
- *   never populated, so onPauseScheduled()'s null guard fires and the
- *   entire pause ad lifecycle is silently skipped.
+ * Pause ad patch history:
+ *   v1 — targeted onPauseScheduled() → no match (wrong method)
+ *   v2 — targeted createPauseSession() → matched but wrong layer;
+ *         prod-frida-origin.bamgrid.com still reached (pcap confirmed)
+ *   v3 — targeted MediaXPauseSession.started() → blocks Glide fetch at
+ *         source; confirmed via pcap that this is where the image request
+ *         originates (prod-frida-origin.bamgrid.com fires at +26.10s)
  */
 
 package app.morphe.patches.disney
@@ -44,40 +43,39 @@ internal object InsertionGetRangesFingerprint : Fingerprint(
 )
 
 // ---------------------------------------------------------------------------
-// Pause ad fingerprint — retargeted to createPauseSession()
+// Pause ad fingerprint — MediaXPauseSession.started()
 //
-// Target: MediaXInterstitialController.createPauseSession(MediaXPause)
+// Network analysis (PCAPdroid) confirmed the pause ad image is fetched from
+// prod-frida-origin.bamgrid.com at +26.10s after pause, triggered by a
+// Glide image load inside MediaXPauseSession.started(). This is the correct
+// interception point — earlier in the chain (createPauseSession, onPauseScheduled)
+// does not prevent the network fetch.
 //
-// This method constructs the MediaXPauseSession and stores it in the
-// controller's pauseSession field. The full pause ad lifecycle depends
-// on this field being non-null:
+// Smali:
+//   const-string v0, "pauseData"                   ← Kotlin null-check label
+//   invoke-static v2, v0, kotlin/jvm/internal/k->g
+//   invoke-virtual v2, MediaXPause;->into()Lbv0/m; ← builds Glide render model
+//   iput-object v2, v1, ...->pause                 ← stores model
+//   getStarted().onNext(kotlin/Unit)               ← triggers overlay render
 //
-//   createPauseSession(MediaXPause)              ← patch here
-//     → new MediaXPauseSession(mediaXPause.into())
-//     → iput pauseSession field
-//     → return session
+// Patching strategy: return-void at offset 0.
+//   - into() is never called → no Glide request → no image fetched
+//   - prod-frida-origin.bamgrid.com is never contacted
+//   - beacons.digital.disneyadvertising.com impression beacon never fires
+//   - ad.doubleclick.net measurement never fires
+//   - Overlay render event never published
 //
-//   onPauseScheduled(MediaXPause)
-//     → iget pauseSession
-//     → if-eqz → return-void  (null guard — our kill switch)
-//     → getPauseScheduled().onNext(session)
-//       → subscriber renders pause ad overlay
-//
-// Patching strategy: return null (const/4 v0, 0x0 → return-object v0)
-// at offset 0. pauseSession field is never populated, so onPauseScheduled's
-// existing null guard fires and the render event is never published.
-//
-// Anchor string "mediaXPause" is a Kotlin non-null assertion label injected
-// by the compiler from the source parameter name — stable across ProGuard
-// minification since it is not subject to name obfuscation.
+// Anchor: "pauseData" is a Kotlin compiler null-check label derived from the
+// source parameter name — stable across ProGuard minification.
+// The class and method names are unobfuscated source-level names.
 // ---------------------------------------------------------------------------
 
-internal object PauseAdSessionFingerprint : Fingerprint(
-    returnType = "Lcom/disneystreaming/nve/player/mel/MediaXPauseSession;",
-    strings = listOf("mediaXPause"),
+internal object PauseAdStartedFingerprint : Fingerprint(
+    returnType = "V",
+    strings = listOf("pauseData"),
     custom = { method, _ ->
-        method.name == "createPauseSession" &&
+        method.name == "started" &&
             method.definingClass ==
-                "Lcom/disneystreaming/nve/player/mel/MediaXInterstitialController;"
+                "Lcom/disneystreaming/nve/player/mel/MediaXPauseSession;"
     },
 )
