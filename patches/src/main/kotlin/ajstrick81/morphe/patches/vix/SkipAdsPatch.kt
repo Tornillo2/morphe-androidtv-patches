@@ -1,8 +1,7 @@
-package ajstrick81.morphe.patches.vix.ads
+package ajstrick81.morphe.patches.vix
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.bytecodePatch
-import ajstrick81.morphe.patches.vix.shared.Constants
 
 @Suppress("unused")
 val skipAdsPatch = bytecodePatch(
