@@ -1,5 +1,5 @@
 {
-  "version": "1.4.39",
+  "version": "1.4.40",
   "appNames": {
     "com.fox.foxone": "Fox One Android TV",
     "com.foxsports.android": "Fox Sports Android TV",
@@ -250,7 +250,7 @@
     },
     {
       "name": "Skip ads",
-      "description": "Eliminates all ViX ad types: stubs the LuraPlayer FreeWheel and VAST/VMAP configuration constructors so no ad URLs are ever requested, forces the skip policy to its most permissive mode, and prevents the Innovid SSAI overlay from mounting.",
+      "description": "Suppresses ViX ad delivery by disabling the FreeWheel ad provider at the config level and preventing the Innovid SSAI overlay from mounting.",
       "use": true,
       "dependencies": [],
       "compatiblePackages": {

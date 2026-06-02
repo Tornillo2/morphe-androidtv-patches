@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-06-02T22:31:53",
-  "description": "## [1.4.39](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.38...v1.4.39) (2026-06-02)\n\n\n### Bug Fixes\n\n* Refactor SkipAdsPatch to simplify ad handling ([7eaede7](https://github.com/ajstrick81/morphe-androidtv-patches/commit/7eaede7510ae55a56a1c58d77d16e41c32bd0dec))",
-  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.39/patches-1.4.39.mpp",
+  "created_at": "2026-06-02T22:47:17",
+  "description": "## [1.4.40](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.39...v1.4.40) (2026-06-02)\n\n\n### Bug Fixes\n\n* push version update through Fingerprints.kt ([54336ae](https://github.com/ajstrick81/morphe-androidtv-patches/commit/54336aed6019be759d1664c5eea888a05c0af523))",
+  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.40/patches-1.4.40.mpp",
   "signature_download_url": "",
-  "version": "1.4.39"
+  "version": "1.4.40"
 }
