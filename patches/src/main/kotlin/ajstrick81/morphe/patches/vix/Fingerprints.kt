@@ -1,4 +1,4 @@
-package ajstrick81.morphe.patches.vix.ads
+package ajstrick81.morphe.patches.vix
 
 import app.morphe.patcher.Fingerprint
 import com.android.tools.smali.dexlib2.AccessFlags
