@@ -1,105 +1,104 @@
-package com.ajstrick81.patches.vix.ads
+package ajstrick81.morphe.patches.vix.ads
 
-import app.morphe.patcher.fingerprint
+import app.morphe.patcher.Fingerprint
+import com.android.tools.smali.dexlib2.AccessFlags
 
-// ---------------------------------------------------------------------------
-// Fingerprints for ViX (com.univision.prendetv) v4.46.0_tv
+// ─────────────────────────────────────────────────────────────────────────────
+// Fingerprints for ViX Android TV (com.univision.prendetv) v4.46.0_tv
 //
-// Ad stack summary:
-//   • LuraPlayer SDK  – VAST/VMAP orchestration + FreeWheel/IMA wrappers
-//   • Innovid SSAI    – JS overlay WebView, SSAIPlaybackState machine
-//   • AdsUI           – countdown + skip button UI
-//   • VideoPlayerFragment / VideoPlayerController – ad-position ticker
-//
-// Fingerprinting strategy: RookieEnough-style unique error/log strings that
-// survive R8 minification.  Each fingerprint targets the smallest stable
-// surface — prefer unique string literals over opcode sequences.
-// ---------------------------------------------------------------------------
+// Ad stack: LuraPlayer SDK (VAST/VMAP + FreeWheel/IMA) + Innovid SSAI overlay
+// All class names confirmed via Dalvik descriptor extraction from base.apk.
+// ─────────────────────────────────────────────────────────────────────────────
 
-
-// ---------------------------------------------------------------------------
-// LAYER 1 — LuraPlayer FreeWheel configuration
+// ─────────────────────────────────────────────────────────────────────────────
+// Hook 1 — LuraFreewheelConfiguration (constructor)
+// classes5.dex / com/akta/luraplayer/api/configs/ads/
 //
-// LuraFreewheelConfiguration holds an `enabled` boolean. The companion
-// object's constructor logs "LuraFreewheelConfiguration(enabled=" which is
-// unique in the entire DEX. We match on the class init that writes this
-// field so we can flip it to false before it's ever read by the scheduler.
-// ---------------------------------------------------------------------------
-internal val luraFreewheelConfigFingerprint = fingerprint {
-    strings("LuraFreewheelConfiguration(enabled=")
-}
-
-// ---------------------------------------------------------------------------
-// LAYER 2a — LuraAdsConfiguration (VAST/VMAP ad URL and macro bag)
+// LuraFreewheelConfiguration holds an `enabled` boolean that gates whether
+// the FreeWheel ad provider is active. Its constructor assigns this field
+// from a parameter. Injecting return-void at index 0 prevents the field
+// from ever being written, leaving `enabled` at its JVM default (false).
+// The LuraPlayer ad scheduler reads this before fetching any ad URLs.
 //
-// The class serialiser emits "LuraAdsConfiguration(macros=" on toString();
-// this is unique to the config data-class and lets us land in the right
-// class regardless of R8 class renaming.
-// ---------------------------------------------------------------------------
-internal val luraAdsConfigFingerprint = fingerprint {
-    strings("LuraAdsConfiguration(macros=")
-}
+// Class is not R8-renamed — full descriptor confirmed in classes5.dex.
+// ─────────────────────────────────────────────────────────────────────────────
+object LuraFreewheelConfigFingerprint : Fingerprint(
+    definingClass = "Lcom/akta/luraplayer/api/configs/ads/LuraFreewheelConfiguration;",
+    name = "<init>",
+    returnType = "V",
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
+)
 
-// ---------------------------------------------------------------------------
-// LAYER 2b — LuraAdsPolicySurrogate (skip-mode policy wrapper)
+// ─────────────────────────────────────────────────────────────────────────────
+// Hook 2 — LuraAdsConfiguration (constructor)
+// classes6.dex / com/akta/luraplayer/api/configs/ads/
 //
-// Controls whether ads are skippable and after how many seconds. The
-// surrogate's toString emits "LuraAdsPolicySurrogate(skipMode=" — unique.
-// We patch this so the policy always reports the most permissive skip mode.
-// ---------------------------------------------------------------------------
-internal val luraAdsPolicyFingerprint = fingerprint {
-    strings("LuraAdsPolicySurrogate(skipMode=")
-}
+// Top-level VAST/VMAP ad configuration object. Holds the ad URL macro bag
+// and break schedule. Stubbing the constructor leaves all fields null/empty,
+// so the Lura ad scheduler has no URL to request and no breaks to schedule.
+//
+// Class is not R8-renamed — full descriptor confirmed in classes6.dex.
+// ─────────────────────────────────────────────────────────────────────────────
+object LuraAdsConfigFingerprint : Fingerprint(
+    definingClass = "Lcom/akta/luraplayer/api/configs/ads/LuraAdsConfiguration;",
+    name = "<init>",
+    returnType = "V",
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
+)
 
-// ---------------------------------------------------------------------------
-// LAYER 3 — Innovid SSAI ad start
+// ─────────────────────────────────────────────────────────────────────────────
+// Hook 3 — LuraAdsPolicySurrogate (constructor)
+// classes5.dex / com/akta/luraplayer/api/configs/ads/
 //
-// InnovidHelper.startAd() is the entry-point for the Innovid WebView overlay.
-// Its companion logs "InnovidHelper.kt" as a tag and the method body
-// contains "onInnovidAdEvent:" as a callback label — together these two
-// strings narrow the match to a single method across all 11 DEX shards.
-// ---------------------------------------------------------------------------
-internal val innovidStartAdFingerprint = fingerprint {
-    strings(
-        "InnovidHelper.kt",
-        "onInnovidAdEvent:",
-    )
-}
+// Wraps skip-mode policy (LuraAdsSkipMode enum). Controls whether ads are
+// skippable and after how many seconds. Stubbing the constructor leaves
+// skipMode at its default enum value, which is the most permissive skip mode.
+// Any ad that survives Hooks 1–2 will be immediately skippable.
+//
+// Class is not R8-renamed — full descriptor confirmed in classes5.dex.
+// ─────────────────────────────────────────────────────────────────────────────
+object LuraAdsPolicyFingerprint : Fingerprint(
+    definingClass = "Lcom/akta/luraplayer/api/configs/ads/LuraAdsPolicySurrogate;",
+    name = "<init>",
+    returnType = "V",
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
+)
 
-// ---------------------------------------------------------------------------
-// LAYER 4 — AdsUI countdown / showSkippableAd
+// ─────────────────────────────────────────────────────────────────────────────
+// Hook 4 — InnovidHelper (primary public method)
+// classes10.dex / com/univision/descarga/videoplayer/utilities/innovid/
 //
-// AdsUI manages the countdown overlay shown during linear ads. The lambda
-// class logged as "AdsUI$showSkippableAd$1$2" contains a coroutine delay
-// and the unique string "AdsUI$countdown$1" — matching both anchors locks
-// us onto the countdown coroutine body that drives the skip timer.
-// ---------------------------------------------------------------------------
-internal val adsUiCountdownFingerprint = fingerprint {
-    strings(
-        "AdsUI\$showSkippableAd\$1\$2",
-        "AdsUI\$countdown\$1",
-    )
-}
+// InnovidHelper is the entry point for the Innovid SSAI WebView overlay.
+// The class has a single public non-constructor method which starts the
+// Innovid ad session. Stubbing it prevents the overlay WebView from ever
+// being mounted — no Innovid ad is fetched or rendered.
+//
+// Class is not R8-renamed — full descriptor confirmed in classes10.dex.
+// Method name is R8-obfuscated; matched by return type + access flags on
+// the single public non-constructor method in this class.
+// ─────────────────────────────────────────────────────────────────────────────
+object InnovidStartAdFingerprint : Fingerprint(
+    definingClass = "Lcom/univision/descarga/videoplayer/utilities/innovid/InnovidHelper;",
+    returnType = "V",
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL)
+)
 
-// ---------------------------------------------------------------------------
-// LAYER 5 — VideoPlayerFragment ad update job
+// ─────────────────────────────────────────────────────────────────────────────
+// Hook 5 — DescargaApplication ad consent initialiser
+// classes6.dex / com/univision/descarga/app/
 //
-// VideoPlayerFragment.startAdUpdateJob() launches a coroutine that feeds
-// position ticks into the ad engine. Its error path emits the unique string
-// "VideoPlayerFragment\$startAdUpdateJob\$1" — a reliable minification-safe
-// anchor. Stubbing this prevents all ticker-driven ad-position callbacks.
-// ---------------------------------------------------------------------------
-internal val videoPlayerAdJobFingerprint = fingerprint {
-    strings("VideoPlayerFragment\$startAdUpdateJob\$1")
-}
-
-// ---------------------------------------------------------------------------
-// AdsOnPause — ViX does NOT appear to ship an AdsOnPause implementation.
+// DescargaApplication contains the consent/ad-ID initialisation block that
+// runs at app startup. Returning void at index 0 prevents the advertising
+// consent state from being written, which causes the ad pipeline to see
+// consent as undetermined — most ad providers will not serve ads in this
+// state and abort the ad request path early.
 //
-// Searched all 11 DEX shards for: "pause", "onPause", "adOnPause",
-// "pauseAd", "AdOnPause", "onAdPause" in combination with known ad-SDK
-// class references. No matching fingerprint surfaces. ViX's Lura/Innovid
-// stack pauses ad playback via the ExoPlayer lifecycle directly (the player
-// is paused, not an ad surface); there is no discrete AdsOnPause controller
-// class to patch. No fingerprint is defined here.
-// ---------------------------------------------------------------------------
+// This is the outermost gate and the safest single-point suppression.
+// Confirmed method: updateAdvertisingConsent (not R8-renamed).
+// ─────────────────────────────────────────────────────────────────────────────
+object DescargaAdConsentFingerprint : Fingerprint(
+    definingClass = "Lcom/univision/descarga/app/DescargaApplication;",
+    name = "updateAdvertisingConsent",
+    returnType = "V",
+    accessFlags = listOf(AccessFlags.PRIVATE)
+)
