@@ -1,80 +1,67 @@
-package ajstrick81.morphe.patches.peacock.ads
+package app.morphe.patches.peacocktvandroidtv.ads
 
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.patcher.patch.bytecodePatch
-import ajstrick81.morphe.patches.peacock.shared.Constants
-
-// Note: val is named peacockSkipAdsPatch to avoid a top-level name conflict
-// with ajstrick81.morphe.patches.tubi.ads.skipAdsPatch. Kotlin does not allow
-// two top-level vals with the same name within the same compiled module even
-// when they are in different packages.
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.util.returnEarly
 
 @Suppress("unused")
-val peacockSkipAdsPatch = bytecodePatch(
+val skipAdsPatch = bytecodePatch(
     name = "Skip ads",
-    description = "Blocks Helio CSAI ad delivery via two hooks: a coroutine sentinel that prevents the ad schedule coroutine from constructing HelioAdPlaybackState, and a return-void on ComponentListener.a() that silences any AdPlaybackState updates that reach the media3 ExoPlayer timeline.",
+    description = "Disables ad delivery via five independent layers: MediaTailor SSAI proxy, " +
+        "ObfuscatedProfileId SDK registry (Adobe, Comscore, Conviva, Freewheel, MParticle, " +
+        "MediaTailor, Nielsen, OpenMeasurement), MediaTailor ad service constructor, " +
+        "SSAI configuration provider (forces AdvertisingStrategy.None), and the Sky SDK " +
+        "player engine ad break handler. Validated against v7.5.102.",
 ) {
-    compatibleWith(Constants.COMPATIBILITY)
+    compatibleWith(AppCompatibilities.PEACOCK_TV_ANDROID_TV)
 
     execute {
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Hook 1 — HelioAdsLoader$1$1$1.invokeSuspend(Object)
-        //
-        // The coroutine state machine that drives the entire ad schedule
-        // lifecycle. Returning COROUTINE_SUSPENDED at index 0 permanently
-        // suspends the coroutine — it never resumes, so HelioAdPlaybackState
-        // is never constructed and HelioAdsLoader.f stays null.
-        //
-        // Because all three downstream dispatch paths guard with:
-        //   if-eqz HelioAdsLoader.f, :skip
-        // a null f means no AdPlaybackState is ever dispatched to
-        // ComponentListener, and the ExoPlayer timeline never learns about
-        // any ad periods.
-        //
-        // Coroutine sentinel: return CoroutineSingletons.c (= COROUTINE_SUSPENDED).
-        // Field name 'c' confirmed via APK autopsy on v7.5.102.
-        //
-        // We write into p1 (the incoming result Object) rather than a v-register
-        // to avoid any dependency on the method's local register count.
-        // ─────────────────────────────────────────────────────────────────────
-        HelioAdScheduleCoroutineFingerprint.method.addInstructions(
+        // ── Layer 1 ─────────────────────────────────────────────────────────
+        // Kill MediaTailor SSAI proxy — empty string prevents proxy URL
+        // configuration, disabling server-side ad insertion at the source.
+        MediaTailorProxyHostFingerprint.method.addInstructions(
             0,
             """
-                sget-object p1, Lkotlin/coroutines/intrinsics/CoroutineSingletons;->c:Lkotlin/coroutines/intrinsics/CoroutineSingletons;
-                return-object p1
-            """
+                const-string v0, ""
+                return-object v0
+            """.trimIndent(),
         )
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Hook 2 — MultiPeriodAdsMediaSource$ComponentListener.a(AdPlaybackState)
-        //
-        // Belt-and-suspenders backstop for any AdPlaybackState that reaches
-        // the EventListener interface despite Hook 1. This covers:
-        //   - HelioAdsLoader$1$1$1$1.invoke() — the per-ad-event update lambda
-        //     that constructs a new AdPlaybackState directly (bypasses the
-        //     coroutine and therefore Hook 1) and dispatches via h.a()
-        //   - Any future Helio update that adds a new dispatch path
-        //
-        // Returning void here prevents Handler.post(Runnable_a) from firing,
-        // so MultiPeriodAdsMediaSource.w is never updated and ExoPlayer's
-        // timeline refresh methods j0()/k0() are never called.
-        //
-        // definingClass and parameter type are verified against v7.5.102 smali:
-        //   Lcom/comcast/helio/hacks/multiperiodads/MultiPeriodAdsMediaSource$ComponentListener;
-        //   Landroidx/media3/common/AdPlaybackState;
-        //
-        // Note: prior builds used wrong paths (cvs/android/helio/ads +
-        // exoplayer2 parameter). Those are corrected here.
-        //
-        // Note: returnEarly() from app.morphe.util is not available in Morphe
-        // 1.3.0. We insert return-void directly via addInstructions at index 0.
-        // ─────────────────────────────────────────────────────────────────────
-        HelioAdPlaybackStateFingerprint.method.addInstructions(
+        // ── Layer 2 ─────────────────────────────────────────────────────────
+        // Master kill switch — empty ObfuscatedProfileId array prevents all
+        // 9 ad/analytics SDKs from being registered by the Sky SDK.
+        ObfuscatedProfileIdValuesFingerprint.method.addInstructions(
             0,
             """
-                return-void
-            """
+                const/4 v0, 0x0
+                new-array v0, v0, [Lcom/sky/core/player/addon/common/data/ObfuscatedProfileId;
+                return-object v0
+            """.trimIndent(),
+        )
+
+        // ── Layer 3 ─────────────────────────────────────────────────────────
+        // Abort MediaTailor ad service construction — returnEarly(null)
+        // targets the factory method via its unique error string anchor,
+        // surviving R8/D8 minification. Approach: RookieEnough/De-ReVanced.
+        MediaTailorAdServiceMethodFingerprint.method.returnEarly(null)
+
+        // ── Layer 4 ─────────────────────────────────────────────────────────
+        // Force AdvertisingStrategy.None — getSsaiConfigurationProvider()
+        // returning null causes Configuration$getDefaultAdvertisingStrategyProvider$1
+        // .strategyForType() to take the confirmed if-eqz → None branch
+        // for ALL playback types. AutomaticSSAI becomes unreachable. No crash.
+        SsaiConfigurationProviderFingerprint.method.returnEarly(null)
+
+        // ── Layer 5 ─────────────────────────────────────────────────────────
+        // Kill ad breaks at the player engine level — immediately return-void
+        // from handleAdBreakStarted() in PlayerEngineItemImpl so the Sky SDK
+        // player never enters an ad break regardless of what upstream layers
+        // may have missed. This is the last line of defense before the player
+        // actually plays ad content.
+        HandleAdBreakStartedFingerprint.method.addInstructions(
+            0,
+            "return-void",
         )
     }
 }
