@@ -1,14 +1,12 @@
-package app.morphe.patches.peacocktvandroidtv.ads
+package ajstrick81.morphe.patches.peacock.ads
 
 import app.morphe.patcher.Fingerprint
 import com.android.tools.smali.dexlib2.AccessFlags
 
-// ─────────────────────────────────────────────────────────
-// LAYER 1: MediaTailor SSAI proxy host
+// ── Layer 1 ──────────────────────────────────────────────────────────────────
 // Target: SSAIConfiguration$MediaTailor$AutomaticMediaTailor.getProxyHost()
-// Returning "" prevents proxy URL configuration → no SSAI.
-// STATUS: Confirmed matching v6.11.212 and present in v7.5.102
-// ─────────────────────────────────────────────────────────
+// Returns the MediaTailor SSAI proxy URL. Returning "" disables SSAI.
+// Confirmed present in v7.5.102.
 internal object MediaTailorProxyHostFingerprint : Fingerprint(
     accessFlags = listOf(AccessFlags.PUBLIC),
     returnType = "Ljava/lang/String;",
@@ -18,12 +16,12 @@ internal object MediaTailorProxyHostFingerprint : Fingerprint(
     },
 )
 
-// ─────────────────────────────────────────────────────────
-// LAYER 2: ObfuscatedProfileId master kill switch
+// ── Layer 2 ──────────────────────────────────────────────────────────────────
 // Target: ObfuscatedProfileId.values()
-// Returning empty array prevents all 9 ad/analytics SDKs from registering.
-// STATUS: Confirmed matching v6.11.212 and present in v7.5.102
-// ─────────────────────────────────────────────────────────
+// Returns all 9 registered ad/analytics SDK profiles. Returning an empty
+// array prevents Adobe, Comscore, Conviva, Freewheel, MParticle,
+// MParticleSessionId, MediaTailor, Nielsen, and OpenMeasurement from loading.
+// Confirmed present in v7.5.102.
 internal object ObfuscatedProfileIdValuesFingerprint : Fingerprint(
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC),
     returnType = "[Lcom/sky/core/player/addon/common/data/ObfuscatedProfileId;",
@@ -33,27 +31,23 @@ internal object ObfuscatedProfileIdValuesFingerprint : Fingerprint(
     },
 )
 
-// ─────────────────────────────────────────────────────────
-// LAYER 3: MediaTailor ad service construction
+// ── Layer 3 ──────────────────────────────────────────────────────────────────
 // Target: MediaTailorAdvertServiceFactoryImpl — method containing unique
 // error string "Could not build MT Advertising service".
-// returnEarly(null) aborts service construction.
-// Approach via RookieEnough/De-ReVanced — survives R8/D8 minification.
-// STATUS: String confirmed present in v7.5.102 base.apk (DEX 2)
-// ─────────────────────────────────────────────────────────
+// Returning null aborts service construction.
+// String confirmed present in v7.5.102 DEX 2.
 internal object MediaTailorAdServiceMethodFingerprint : Fingerprint(
     accessFlags = listOf(AccessFlags.PUBLIC),
     returnType = "Ljava/lang/Object;",
     strings = listOf("Could not build MT Advertising service"),
 )
 
-// ─────────────────────────────────────────────────────────
-// LAYER 4: SSAI Configuration Provider null override
+// ── Layer 4 ──────────────────────────────────────────────────────────────────
 // Target: Configuration.getSsaiConfigurationProvider()
-// Returning null forces strategyForType() → AdvertisingStrategy.None
-// for ALL playback types via confirmed if-eqz branch. No crash risk.
-// STATUS: Class confirmed present in v7.5.102; named method, version-stable
-// ─────────────────────────────────────────────────────────
+// Returning null forces Configuration$getDefaultAdvertisingStrategyProvider$1
+// .strategyForType() to return AdvertisingStrategy.None for all playback
+// types via confirmed if-eqz branch. AutomaticSSAI becomes unreachable.
+// Named method on stable Sky SDK class — version-resilient.
 internal object SsaiConfigurationProviderFingerprint : Fingerprint(
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),
     returnType = "Lcom/sky/core/player/sdk/addon/SSAIConfigurationProvider;",
@@ -63,17 +57,11 @@ internal object SsaiConfigurationProviderFingerprint : Fingerprint(
     },
 )
 
-// ─────────────────────────────────────────────────────────
-// LAYER 5: Ad break skip at playback level
-// Target: PlayerEngineItemImpl.handleAdBreakStarted()
-// This is the Sky SDK playback engine's ad break handler.
-// In v7.5.102 confirmed as:
-//   PlayerEngineItemImpl.handleAdBreakStarted(AdBreakStartedEvent)V
-// The class also has skipAdvert(StitchedAdvert)V — we call it from
-// handleAdBreakStarted to immediately skip every ad break.
-// Anchor: inner class "PlayerEngineItemImpl$handleAdBreakStarted$1"
-// is confirmed present in DEX 2 as a string literal.
-// ─────────────────────────────────────────────────────────
+// ── Layer 5 ──────────────────────────────────────────────────────────────────
+// Target: PlayerEngineItemImpl.handleAdBreakStarted(AdBreakStartedEvent)
+// The Sky SDK player engine ad break entry point. Returning void immediately
+// prevents the player from ever entering an ad break at the playback level.
+// Confirmed present in v7.5.102 DEX 2 via androguard analysis.
 internal object HandleAdBreakStartedFingerprint : Fingerprint(
     accessFlags = listOf(AccessFlags.PUBLIC),
     returnType = "V",
@@ -81,20 +69,5 @@ internal object HandleAdBreakStartedFingerprint : Fingerprint(
         method.name == "handleAdBreakStarted" &&
             classDef.type ==
                 "Lcom/sky/core/player/sdk/playerEngine/playerBase/PlayerEngineItemImpl;"
-    },
-)
-
-// ─────────────────────────────────────────────────────────
-// LAYER 5b: handleAdStartedEvent — fallback anchor
-// Target: method in PlayerEngineItemImpl containing "handleAdStartedEvent"
-// string. Used to locate the class if Layer 5 needs a string anchor.
-// STATUS: String confirmed present in v7.5.102 DEX 2
-// ─────────────────────────────────────────────────────────
-internal object HandleAdStartedEventFingerprint : Fingerprint(
-    returnType = "V",
-    strings = listOf("handleAdStartedEvent"),
-    custom = { method, classDef ->
-        classDef.type ==
-            "Lcom/sky/core/player/sdk/playerEngine/playerBase/PlayerEngineItemImpl;"
     },
 )
