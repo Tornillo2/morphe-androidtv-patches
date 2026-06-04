@@ -7,10 +7,9 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 @Suppress("unused")
 val skipAdsPatch = bytecodePatch(
     name = "Skip ads",
-    description = "Disables ad delivery via four independent layers: MediaTailor SSAI proxy, " +
-        "MediaTailor ad service constructor, SSAI configuration provider " +
-        "(forces AdvertisingStrategy.None), and the Sky SDK player engine " +
-        "ad break handler. Validated against v7.5.102.",
+    description = "Disables ad delivery via three confirmed layers: MediaTailor SSAI proxy, " +
+        "MediaTailor ad service constructor, and SSAI configuration provider " +
+        "(forces AdvertisingStrategy.None for all playback types). Validated v7.5.102.",
 ) {
     compatibleWith(Constants.COMPATIBILITY)
 
@@ -42,19 +41,6 @@ val skipAdsPatch = bytecodePatch(
         // returning null causes strategyForType() to take the confirmed
         // if-eqz → None branch for ALL playback types. No crash risk.
         SsaiConfigurationProviderFingerprint.method.addInstructions(
-            0,
-            """
-                const/4 v0, 0x0
-                return-object v0
-            """.trimIndent(),
-        )
-
-        // ── Layer 5 ─────────────────────────────────────────────────────────
-        // Kill ad breaks at the player engine level — handleAdBreakStarted
-        // is a Kotlin suspend function (return type Object in DEX), so we
-        // return null rather than return-void to avoid a verifier error.
-        // Null return causes the coroutine to complete with no-op result.
-        HandleAdBreakStartedFingerprint.method.addInstructions(
             0,
             """
                 const/4 v0, 0x0
