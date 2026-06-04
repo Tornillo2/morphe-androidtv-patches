@@ -2,13 +2,13 @@
 
 > **Built on the Shoulders of Giants**
 > 
-> Huge shout-out to the [Morphe Team](https://github.com/morphepatches) for creating this beautiful community ❤️
+> Huge shout-out to the [Morphe Team](https://github.com/morphepatches) for creating this beautiful community
 
 ---
 
 ## ❓ About
 
-I'm just like you — I enjoy watching TV and movies without being bored and annoyed to death by ads. I'll try to keep this repo updated when I can. I only do it for fun. 😄
+I'm just like you — I enjoy watching TV and movies without being bored and annoyed to death by ads. I'll try to keep this repo updated when I can. I only do it for fun.
 
 ---
 
