@@ -19,17 +19,7 @@ I'm just like you. I enjoy watching TV and movies without being bored and annoye
 
 **Prime Video patch is being tested and may best be used in conjuction with DNS filtering like AdGuard Home or PiHole**
 
-**This patch is built and tested against Paramount+ v16.8 only.**
-**For Paramount+: Applying this patch to any other version — especially v16.11 — will fail or produce an unstable result.**
-
-### Why v16.8?
-
-| | v16.8 ✅ | v16.11 ❌ |
-|---|---|---|
-| Min SDK | 22 (Android 5.0+) | 32 (Android 12+) |
-| Compatible with Onn 4K (Android 10) | Yes | No |
-| Anti-tamper library (`libtoolChecker.so`) | No | Yes |
-| Patchable | Yes | No |
+**For Paramount+: Currently under development - the transition from v16.8 to v16.12 did not go as planned and I'm still debugging the issues**
 
 ### Where to Download
 
