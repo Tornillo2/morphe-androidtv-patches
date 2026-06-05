@@ -46,3 +46,19 @@ internal object SsaiConfigurationProviderFingerprint : Fingerprint(
 // "handleAdBreakStarted" only appears in Kotlin metadata class name strings,
 // not as a const-string instruction in any method body. Correct anchor
 // string needs to be identified from merged APK smali before re-adding.
+
+// ── Layer 6 ──────────────────────────────────────────────────────────────────
+// Target: NetworkingKt.getOkHttpClient()
+// Injects AdBlockInterceptor into the OkHttp client builder before build().
+// Intercepts ad CDN and analytics domains at the network layer, replacing
+// the AGH DNS dependency with an in-app equivalent.
+// custom alone is sufficient — NetworkingKt.getOkHttpClient is unique in APK.
+// Confirmed matching v7.5.102.
+internal object GetOkHttpClientFingerprint : Fingerprint(
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC, AccessFlags.FINAL),
+    returnType = "Lokhttp3/OkHttpClient;",
+    custom = { method, classDef ->
+        method.name == "getOkHttpClient" &&
+            classDef.type == "Lcom/peacock/peacocktv/util/NetworkingKt;"
+    },
+)
