@@ -1,3 +1,10 @@
+## [1.4.47](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.46...v1.4.47) (2026-06-05)
+
+
+### Bug Fixes
+
+* Refactor ad playback state handling in SkipAdsPatch ([cb0b454](https://github.com/ajstrick81/morphe-androidtv-patches/commit/cb0b454f85b9cef1e8b8625f425320d8fc160686))
+
 ## [1.4.46](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.45...v1.4.46) (2026-06-05)
 
 
