@@ -19,3 +19,9 @@
 -keep class ajstrick81.morphe.extension.peacock.ads.SkipAdsPatch {
     public static *** emptyAdPlaybackState(java.lang.Object);
 }
+# Peacock — Layer 6: OkHttp ad CDN interceptor
+# Morphe loads this via reflection when injecting into NetworkingKt.getOkHttpClient().
+# Keeping the class and constructor prevents R8 from stripping or renaming it.
+-keep class ajstrick81.morphe.extension.peacock.ads.AdBlockInterceptor {
+    public <init>();
+}
