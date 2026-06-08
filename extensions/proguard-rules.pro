@@ -25,3 +25,11 @@
 -keep class ajstrick81.morphe.extension.peacock.ads.AdBlockInterceptor {
     public <init>();
 }
+# ProGuard rules for GMB Diagnostic extension.
+# logGMBMessage is called directly from patched smali via invoke-static.
+# Without this rule R8 may inline or remove it.
+# TEMPORARY — remove when this diagnostic patch is replaced by production patch.
+
+-keep class ajstrick81.morphe.extension.primevideo.gmb.GMBDiagnostic {
+    public static *** logGMBMessage(java.lang.String, java.lang.String);
+}
