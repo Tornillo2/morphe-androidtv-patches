@@ -4,33 +4,47 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 
 /**
- * Prime Video ATV — ad group suppression extension.
+ * Prime Video ATV — ad group suppression and GMB diagnostic extension.
  *
- * Two entry points called from patched bytecode:
+ * Entry points called from patched bytecode:
  *
  *   skipAllMedia3AdGroups — transforms the media3 AdPlaybackState map
  *   skipAllExo2AdGroups   — same for the ExoPlayer2 / GMS Ads variant
+ *   logGMBMessage         — DIAGNOSTIC: logs all GMB event types to logcat
  *
- * Strategy change from withSkippedAdGroup to withRemovedAdGroupCount:
+ * --- AdPlaybackState suppression ---
  *
- *   withSkippedAdGroup(i) marks each ad as AD_STATE_SKIPPED but leaves the
- *   ad groups present in the AdPlaybackState. The WASM playback::machine
- *   sees groups in SKIPPED state and loops trying to find their correlation
- *   IDs to close the ad break envelope. When those IDs are absent (because
- *   we stripped the ad data) the machine stalls for ~56 seconds before
- *   timing out — causing the "longer commercials" effect observed in logcat.
+ * Strategy: withRemovedAdGroupCount(adGroupCount) physically removes all ad
+ * groups from the state in one operation rather than iterating and skipping
+ * each group individually. This prevents the WASM playback::machine from
+ * looping trying to find correlation IDs for skipped groups — reducing the
+ * ad break stall from ~56 seconds to ~9 seconds.
  *
- *   withRemovedAdGroupCount(adGroupCount) physically removes all ad groups
- *   from the state object by setting removedAdGroupCount = adGroupCount.
- *   From the playback::machine's perspective the ad break never existed —
- *   no groups to iterate, no envelope to refresh, no correlation ID to find.
- *   The state machine advances cleanly to content without the stall loop.
+ * --- GMB Diagnostic ---
  *
- * All paths are wrapped in try/catch — any failure returns the original
- * map unmodified so playback degrades gracefully rather than crashing.
+ * logGMBMessage() is called at index 0 of GMBMessageProcessor.processMessage()
+ * and logs every GMB event type string and payload to Android logcat under
+ * the tag "GMB_DIAGNOSTIC" using standard android.util.Log.d().
+ *
+ * Amazon's internal logger (com.amazon.reporting.Log.d) already logs GMB
+ * messages but uses an internal pipeline invisible to ADB logcat. This method
+ * bridges that gap by duplicating the log to the standard Android logger.
+ *
+ * Filter in logcat:
+ *   adb logcat --pid=<PID> -v time | findstr "GMB_DIAGNOSTIC"
+ *
+ * This is a TEMPORARY diagnostic — once the ad/billing event type strings
+ * are identified it will be replaced with a targeted suppression patch.
+ *
+ * All paths are wrapped in try/catch — any failure is a silent no-op so
+ * playback continues normally.
  */
 @SuppressWarnings({"unused", "unchecked", "rawtypes"})
 public class SkipAdsPatch {
+
+    private static final String GMB_TAG = "GMB_DIAGNOSTIC";
+
+    // ── AdPlaybackState suppression ───────────────────────────────────────────
 
     /**
      * Transforms an AdPlaybackState map for the media3 SSAI pipeline.
@@ -38,10 +52,6 @@ public class SkipAdsPatch {
      * Called at index 0 of:
      *   androidx.media3.exoplayer.source.ads.ServerSideAdInsertionMediaSource
      *       .setAdPlaybackStates(ImmutableMap, Timeline)
-     *
-     * For each AdPlaybackState in the map, calls withRemovedAdGroupCount
-     * with the full adGroupCount to remove all ad groups in one operation,
-     * rather than iterating and skipping each group individually.
      */
     public static ImmutableMap skipAllMedia3AdGroups(ImmutableMap adPlaybackStates) {
         try {
@@ -69,8 +79,6 @@ public class SkipAdsPatch {
      * Called at index 0 of:
      *   com.google.android.exoplayer2.source.ads.ServerSideAdInsertionMediaSource
      *       .setAdPlaybackStates(ImmutableMap)
-     *
-     * Same withRemovedAdGroupCount strategy as skipAllMedia3AdGroups.
      */
     public static ImmutableMap skipAllExo2AdGroups(ImmutableMap adPlaybackStates) {
         try {
@@ -88,6 +96,41 @@ public class SkipAdsPatch {
             return builder.build();
         } catch (Exception e) {
             return adPlaybackStates;
+        }
+    }
+
+    // ── GMB Diagnostic ────────────────────────────────────────────────────────
+
+    /**
+     * DIAGNOSTIC — called at index 0 of GMBMessageProcessor.processMessage().
+     *
+     * Logs every GMB event type and payload to Android logcat under the tag
+     * "GMB_DIAGNOSTIC" using standard android.util.Log.d() which surfaces
+     * in ADB logcat — unlike Amazon's internal com.amazon.reporting.Log.d().
+     *
+     * This method does NOT suppress any messages. Every GMB message passes
+     * through to the original processMessage() body after this call.
+     *
+     * During ad breaks and overlay events you will see entries like:
+     *   GMB_DIAGNOSTIC: [TYPE] billing.reportPurchaseLaunchState
+     *   GMB_DIAGNOSTIC: [PAYLOAD] {"state":"LAUNCHED",...}
+     *
+     * Payload is truncated to 500 chars to keep logcat readable.
+     *
+     * @param eventType The GMB event type string
+     * @param payload   The JSON payload for this event
+     */
+    public static void logGMBMessage(String eventType, String payload) {
+        try {
+            android.util.Log.d(GMB_TAG, "[TYPE] " + eventType);
+            if (payload != null && payload.length() > 0) {
+                String truncated = payload.length() > 500
+                    ? payload.substring(0, 500) + "...[TRUNCATED]"
+                    : payload;
+                android.util.Log.d(GMB_TAG, "[PAYLOAD] " + truncated);
+            }
+        } catch (Exception e) {
+            // Silent fail — never interfere with original processMessage flow
         }
     }
 }
