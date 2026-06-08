@@ -1,5 +1,5 @@
 {
-  "version": "1.4.48",
+  "version": "1.4.49",
   "appNames": {
     "com.fox.foxone": "Fox One Android TV",
     "com.foxsports.android": "Fox Sports Android TV",
@@ -40,7 +40,7 @@
     },
     {
       "name": "GMB Diagnostic",
-      "description": "Logs all GMB message event types to logcat for ad event discovery. Temporary diagnostic patch — not for production use.",
+      "description": "Logs all GMB message event types to logcat for ad event discovery. Temporary diagnostic patch.",
       "use": true,
       "dependencies": [],
       "compatiblePackages": {
