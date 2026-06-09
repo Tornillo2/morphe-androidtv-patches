@@ -1,3 +1,10 @@
+## [1.4.51](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.50...v1.4.51) (2026-06-09)
+
+
+### Bug Fixes
+
+* Refactor ad playback strategy for improved performance ([aafdbcd](https://github.com/ajstrick81/morphe-androidtv-patches/commit/aafdbcdd5bdbfa00bfadf071015d8b96bbef11d5))
+
 ## [1.4.50](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.49...v1.4.50) (2026-06-09)
 
 
