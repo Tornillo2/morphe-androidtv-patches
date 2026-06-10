@@ -1,3 +1,10 @@
+## [1.4.53](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.52...v1.4.53) (2026-06-10)
+
+
+### Bug Fixes
+
+* Add four new hooks for ad suppression and opt-out ([daafb60](https://github.com/ajstrick81/morphe-androidtv-patches/commit/daafb606f3f96bb73cd30d3c35c87cea75cdb2e4))
+
 ## [1.4.52](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.51...v1.4.52) (2026-06-09)
 
 
