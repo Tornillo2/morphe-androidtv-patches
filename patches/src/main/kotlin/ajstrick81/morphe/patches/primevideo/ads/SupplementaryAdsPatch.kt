@@ -5,7 +5,7 @@ import app.morphe.patcher.patch.bytecodePatch
 import ajstrick81.morphe.patches.primevideo.shared.Constants
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SUPPLEMENTARY PATCH — four additional hooks from classes2/classes4 analysis
+// SUPPLEMENTARY PATCH — three additional hooks from classes2/classes4 analysis
 //
 // Hook 1: media3 AdsMediaSource$ComponentListener.onAdPlaybackState()
 //   Closes the media3 CSAI gap.
@@ -18,12 +18,11 @@ import ajstrick81.morphe.patches.primevideo.shared.Constants
 //   in the patch. Confirmed reducing pre-roll from ~2 minutes to ~17
 //   seconds. Tells the WASM runtime not to schedule ads for this device.
 //
-// Hook 4: InterstitialAd.show()
-//   Prevents GMS Ads interstitial ads from rendering — covers any
-//   full-screen or overlay format ads delivered via GMS Ads SDK.
-//
-// These four hooks complement the existing skipAdsPatch rather than
-// replacing it. Both patches should be active simultaneously.
+// Note: InterstitialAd.show() was removed — it is declared abstract in
+// the InterstitialAd class, meaning it has no method body. Morphe cannot
+// inject instructions into an abstract method (null method reference).
+// The concrete implementation lives in an obfuscated inner class that
+// would require a different fingerprinting strategy to target safely.
 //
 // Named supplementaryAdsPatch to avoid top-level val naming conflicts.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -31,7 +30,7 @@ import ajstrick81.morphe.patches.primevideo.shared.Constants
 @Suppress("unused")
 val supplementaryAdsPatch = bytecodePatch(
     name = "Skip ads (supplementary)",
-    description = "Adds CSAI suppression, advertising opt-out, and interstitial ad hooks to complement the primary Skip ads patch.",
+    description = "Adds CSAI suppression and advertising opt-out hooks to complement the primary Skip ads patch.",
 ) {
     compatibleWith(Constants.COMPATIBILITY)
 
@@ -80,21 +79,6 @@ val supplementaryAdsPatch = bytecodePatch(
             """
                 const/4 v0, 0x1
                 return v0
-            """
-        )
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Hook 4 — InterstitialAd.show(Activity)
-        //
-        // Prevents Google Mobile Ads SDK interstitial ads from rendering.
-        // Covers full-screen and overlay format ads delivered via GMS Ads
-        // SDK rather than the WASM/Ignite pipeline — including any cart/
-        // purchase overlay style ads that use the interstitial format.
-        // ─────────────────────────────────────────────────────────────────────
-        InterstitialAdShowFingerprint.method.addInstructions(
-            0,
-            """
-                return-void
             """
         )
     }
