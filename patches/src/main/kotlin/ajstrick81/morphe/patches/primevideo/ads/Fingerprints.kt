@@ -52,11 +52,8 @@ object SetAdPlaybackStatesExo2Fingerprint : Fingerprint(
 // CSAI (client-side ad insertion) equivalent of the SSAI hooks above.
 // AdsMediaSource handles dynamically loaded client-side ads via AdsLoader.
 //
-// The call chain:
-//   AdsLoader.EventListener.onAdPlaybackState(AdPlaybackState)
-//     → AdsMediaSource$ComponentListener.onAdPlaybackState()  ← OUR HOOK
-//         → playerHandler.post(Runnable)
-//             → AdsMediaSource.updateAdPlaybackState()
+// Returning void at index 0 prevents the CSAI AdPlaybackState from being
+// posted to the player Handler — AdsMediaSource never sees the ad schedule.
 //
 // Together with the two SSAI fingerprints above this covers both CSAI and
 // SSAI delivery paths in the media3 library.
@@ -78,8 +75,8 @@ object AdsMediaSourceComponentListenerFingerprint : Fingerprint(
 // Confirmed in classes4.dex with identical stopped flag check and Handler
 // post pattern.
 //
-// Closes the final CSAI gap — together all four fingerprints above cover
-// every ad delivery path in both the media3 and ExoPlayer2 pipelines.
+// Together all four fingerprints cover every ad delivery path in both the
+// media3 and ExoPlayer2 pipelines.
 // ─────────────────────────────────────────────────────────────────────────────
 object AdsMediaSourceExo2ComponentListenerFingerprint : Fingerprint(
     definingClass = "Lcom/google/android/exoplayer2/source/ads/AdsMediaSource\$ComponentListener;",
@@ -110,26 +107,4 @@ object IsAdvertisingOptOutFingerprint : Fingerprint(
     parameters = listOf(),
     returnType = "Z",
     accessFlags = listOf(AccessFlags.PUBLIC)
-)
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Senary target — InterstitialAd.show()
-// classes4.dex / smali/com/google/android/gms/ads/interstitial/
-//
-// Google Mobile Ads SDK interstitial ad display method. Returning void
-// prevents full-screen interstitial ads from rendering even if they have
-// already been loaded. This covers any interstitial-format ads (including
-// the cart/purchase overlay style) delivered via the GMS Ads SDK rather
-// than the WASM/Ignite pipeline.
-//
-// The abstract flag is intentional — this is an abstract method on the
-// InterstitialAd class. Morphe resolves it against the concrete
-// implementation at patch time.
-// ─────────────────────────────────────────────────────────────────────────────
-object InterstitialAdShowFingerprint : Fingerprint(
-    definingClass = "Lcom/google/android/gms/ads/interstitial/InterstitialAd;",
-    name = "show",
-    parameters = listOf("Landroid/app/Activity;"),
-    returnType = "V",
-    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.ABSTRACT)
 )
