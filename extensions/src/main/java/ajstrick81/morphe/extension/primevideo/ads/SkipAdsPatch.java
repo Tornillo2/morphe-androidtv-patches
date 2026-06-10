@@ -12,19 +12,8 @@ import java.util.Map;
  *   skipAllExo2AdGroups   — same for the ExoPlayer2 / GMS Ads variant
  *
  * Strategy: withRemovedAdGroupCount(adGroupCount) physically removes all ad
- * groups from the AdPlaybackState in one operation. This is the stable,
- * verified approach that has been confirmed working across multiple test
- * sessions on Onn 4K TV.
- *
- * The withAdDurationsUs(1L) approach (Gemini suggestion) was reverted —
- * it added complexity without a measurable improvement given that the
- * isAdvertisingOptOut hook (SupplementaryAdsPatch) already dramatically
- * reduces ad load before setAdPlaybackStates is called.
- *
- * Note: logGMBMessage was removed. GMB diagnostic analysis confirmed the
- * message bus carries zero ad-related traffic — all ad delivery is handled
- * entirely within the WASM/Ignite native layer. The diagnostic method
- * served its purpose and is no longer needed.
+ * groups from the AdPlaybackState in one operation before ExoPlayer sees the
+ * map. This is the original stable approach confirmed working on Onn 4K TV.
  *
  * All paths wrapped in try/catch — any failure returns the original
  * unmodified map so playback degrades gracefully.
