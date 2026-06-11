@@ -1,3 +1,10 @@
+## [1.4.55](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.54...v1.4.55) (2026-06-11)
+
+
+### Bug Fixes
+
+* Delete obsolete ProGuard rules for extensions ([40f15c6](https://github.com/ajstrick81/morphe-androidtv-patches/commit/40f15c6579a2007d1967e67554a66ebe487c3939))
+
 ## [1.4.54](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.53...v1.4.54) (2026-06-10)
 
 
