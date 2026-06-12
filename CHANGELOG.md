@@ -1,3 +1,11 @@
+## [1.4.59](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.58...v1.4.59) (2026-06-12)
+
+
+### Bug Fixes
+
+* new version and Enhance skipAdsPatch with WebView interception ([9fab827](https://github.com/ajstrick81/morphe-androidtv-patches/commit/9fab8275292d6f0c24b38530f12bd94efcc6cc85))
+* push new version with refactor SkipAdsPatch for clarity and efficiency ([a3ab178](https://github.com/ajstrick81/morphe-androidtv-patches/commit/a3ab178ffde8d9ba8af3bc511b9ce3d27102cef5))
+
 ## [1.4.58](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.57...v1.4.58) (2026-06-12)
 
 

@@ -1,5 +1,5 @@
 {
-  "version": "1.4.58",
+  "version": "1.4.59",
   "appNames": {
     "com.fox.foxone": "Fox One Android TV",
     "com.foxsports.android": "Fox Sports Android TV",
@@ -170,7 +170,7 @@
     },
     {
       "name": "Skip ads",
-      "description": "Disables ad delivery via three confirmed Sky SDK layers plus an OkHttp interceptor that blocks ad CDN and analytics domains at the network layer, replacing the AGH DNS dependency. Validated v7.5.102.",
+      "description": "Disables ad delivery via three confirmed Sky SDK layers, an OkHttp interceptor that blocks ad CDN and analytics domains at the network layer, and a WebView shouldInterceptRequest wrapper that intercepts Chromium-routed ad segment and FreeWheel traffic. Validated v7.5.102.",
       "use": true,
       "dependencies": [],
       "compatiblePackages": {
