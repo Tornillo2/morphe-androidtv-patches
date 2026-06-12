@@ -49,19 +49,27 @@ val skipAdsPatch = bytecodePatch(
         )
 
         // ── Layer 6 ─────────────────────────────────────────────────────────
-        // Inject AdBlockInterceptor into NetworkingKt.getOkHttpClient().
-        // Inserts before offset 5 (after Builder.<init>, before the existing
-        // OkHttpWorkaroundInterceptor new-instance) so both interceptors are
-        // chained — AdBlockInterceptor runs first, then OkHttpWorkaroundInterceptor.
-        // Suffix matching in AdBlockInterceptor covers future CDN group IDs
-        // (g007+) without any patch update.
+        // Inject AdBlockInterceptor into NetworkingKt.getOkHttpClient() via
+        // the zero-register wrapper pattern (PeacockAdPatchHelper.injectAdBlocker).
+        //
+        // Root cause of previous VerifyError: the original 4-instruction block
+        // used new-instance + invoke-direct + invoke-virtual + move-result-object,
+        // which caused type-undefined v0 at 0x16 because addInstructions(5)
+        // inserted mid-method before register state was fully initialized from
+        // the verifier's perspective.
+        //
+        // Fix: single invoke-static passing v0 (the Builder) to a Java/Kotlin
+        // wrapper that calls addInterceptor() internally. No v-register reads,
+        // writes, or move-result-object needed — the verifier sees only a void
+        // static call with a known input type. Cannot produce a VerifyError.
+        //
+        // Offset 5 = after Builder.<init>, before the existing
+        // OkHttpWorkaroundInterceptor new-instance. Both interceptors are
+        // chained: AdBlockInterceptor runs first, then OkHttpWorkaroundInterceptor.
         GetOkHttpClientFingerprint.method.addInstructions(
             5,
             """
-                new-instance v1, Lajstrick81/morphe/extension/peacock/ads/AdBlockInterceptor;
-                invoke-direct {v1}, Lajstrick81/morphe/extension/peacock/ads/AdBlockInterceptor;-><init>()V
-                invoke-virtual {v0, v1}, Lokhttp3/OkHttpClient${'$'}Builder;->addInterceptor(Lokhttp3/Interceptor;)Lokhttp3/OkHttpClient${'$'}Builder;
-                move-result-object v0
+                invoke-static {v0}, Lajstrick81/morphe/extension/peacock/ads/PeacockAdPatchHelper;->injectAdBlocker(Lokhttp3/OkHttpClient${'$'}Builder;)V
             """.trimIndent(),
         )
     }
