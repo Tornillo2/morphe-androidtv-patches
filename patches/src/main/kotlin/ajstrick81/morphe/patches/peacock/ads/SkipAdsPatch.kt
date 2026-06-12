@@ -49,27 +49,35 @@ val skipAdsPatch = bytecodePatch(
         )
 
         // ── Layer 6 ─────────────────────────────────────────────────────────
-        // Inject AdBlockInterceptor into NetworkingKt.getOkHttpClient() via
-        // the zero-register wrapper pattern (PeacockAdPatchHelper.injectAdBlocker).
+        // Replace NetworkingKt.getOkHttpClient() body entirely via a no-arg
+        // static call to PeacockAdPatchHelper.buildOkHttpClient().
         //
-        // Root cause of previous VerifyError: the original 4-instruction block
-        // used new-instance + invoke-direct + invoke-virtual + move-result-object,
-        // which caused type-undefined v0 at 0x16 because addInstructions(5)
-        // inserted mid-method before register state was fully initialized from
-        // the verifier's perspective.
+        // History of VerifyErrors:
+        //   v1.4.56 — offset 5, 4-instruction block passing v0 as Builder arg
+        //             → type=Undefined at 0x16 (move-result-object after build())
+        //   v1.4.57 — offset 5, single invoke-static {v0} passing Builder arg
+        //             → type=Conflict at 0x10 (verifier ambiguous on v0 type
+        //                at mid-method merge point)
         //
-        // Fix: single invoke-static passing v0 (the Builder) to a Java/Kotlin
-        // wrapper that calls addInterceptor() internally. No v-register reads,
-        // writes, or move-result-object needed — the verifier sees only a void
-        // static call with a known input type. Cannot produce a VerifyError.
+        // Root cause: any insertion at offset 5 involves a register (v0) that
+        // the verifier is actively tracking mid-method. Even a single pass-through
+        // invoke causes a type conflict at the merge point.
         //
-        // Offset 5 = after Builder.<init>, before the existing
-        // OkHttpWorkaroundInterceptor new-instance. Both interceptors are
-        // chained: AdBlockInterceptor runs first, then OkHttpWorkaroundInterceptor.
+        // Fix — offset 0, no register arguments:
+        //   At offset 0 no registers are live. invoke-static {} touches nothing.
+        //   move-result-object v0 assigns a fresh OkHttpClient into an
+        //   uninitialized register — the verifier always accepts this.
+        //   return-object v0 exits cleanly. Original method body unreachable.
+        //
+        // PeacockAdPatchHelper.buildOkHttpClient() replicates the original body
+        // in full (Builder + OkHttpWorkaroundInterceptor + build()) and prepends
+        // AdBlockInterceptor so both interceptors are chained.
         GetOkHttpClientFingerprint.method.addInstructions(
-            5,
+            0,
             """
-                invoke-static {v0}, Lajstrick81/morphe/extension/peacock/ads/PeacockAdPatchHelper;->injectAdBlocker(Lokhttp3/OkHttpClient${'$'}Builder;)V
+                invoke-static {}, Lajstrick81/morphe/extension/peacock/ads/PeacockAdPatchHelper;->buildOkHttpClient()Lokhttp3/OkHttpClient;
+                move-result-object v0
+                return-object v0
             """.trimIndent(),
         )
     }
