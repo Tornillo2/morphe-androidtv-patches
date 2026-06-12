@@ -3,10 +3,6 @@ package ajstrick81.morphe.patches.peacock.ads
 import ajstrick81.morphe.patches.peacock.shared.Constants
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
-import app.morphe.patcher.extensions.InstructionExtensions.instructions
-import app.morphe.patcher.util.PatchException
-import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.instruction.formats.Instruction35c
 
 @Suppress("unused")
 val skipAdsPatch = bytecodePatch(
@@ -96,38 +92,24 @@ val skipAdsPatch = bytecodePatch(
         //
         // XTVWebView is a full WebView subclass that loads:
         //   https://tv.clients.peacocktv.com/android.html?containerVersion=7.5.102
-        // The entire player UI and ad logic run as JavaScript inside Chromium.
         // xtvClient (XTVWebView$xtvClient$1) extends WebViewClient but does NOT
-        // override shouldInterceptRequest — it falls through to the no-op default.
+        // override shouldInterceptRequest — falls through to the no-op default.
         //
-        // Injection point: XTVWebView.<init>(Context) at offset 252, immediately
-        // before the existing setWebViewClient(xtvClient) call.
+        // Injection point: instruction index 54 (bytecode offset 252) in
+        // XTVWebView.<init>(Context), immediately before setWebViewClient(xtvClient).
         //   v5 = XTVWebView (this), v1 = xtvClient$1 instance
         //
-        // We intercept v1 before it is passed to setWebViewClient(), wrapping it
-        // via PeacockWebViewHelper.wrapClient(). The wrapper delegates all existing
-        // xtvClient callbacks (onPageStarted, onPageFinished, onLoadResource,
-        // onReceivedError, onReceivedHttpError, onReceivedSslError,
-        // onRenderProcessGone) and adds shouldInterceptRequest() which returns an
-        // empty 200 response for ad CDN and FreeWheel hostnames.
+        // Two instructions inserted before index 54 replace v1 with the wrapped
+        // client. No new registers allocated — v1 is already typed as WebViewClient
+        // at this point, so the verifier sees a legal same-type reassignment.
         //
-        // Two instructions are inserted before the existing setWebViewClient call;
-        // v1 is reassigned to the wrapped client. No new registers are allocated.
-        // No VerifyError risk — v1 was already typed as WebViewClient at this point.
-        val xtvMethod = XtvClientWrapFingerprint.method
-
-        val setWebViewClientIndex = xtvMethod.instructions.indexOfFirst { instruction ->
-            instruction.opcode == Opcode.INVOKE_VIRTUAL &&
-                (instruction as? Instruction35c)?.reference.toString()
-                    .contains("setWebViewClient")
-        }
-
-        if (setWebViewClientIndex < 0) {
-            throw PatchException("Layer 7: setWebViewClient call not found in XTVWebView.<init>")
-        }
-
-        xtvMethod.addInstructions(
-            setWebViewClientIndex,
+        // PeacockWebViewHelper.wrapClient() delegates all existing xtvClient
+        // callbacks (onPageStarted, onPageFinished, onLoadResource, onReceivedError,
+        // onReceivedHttpError, onReceivedSslError, onRenderProcessGone) and adds
+        // shouldInterceptRequest() returning an empty 200 response for confirmed
+        // ad CDN and FreeWheel hostnames.
+        XtvClientWrapFingerprint.method.addInstructions(
+            54,
             """
                 invoke-static {v1}, Lajstrick81/morphe/extension/peacock/ads/PeacockWebViewHelper;->wrapClient(Landroid/webkit/WebViewClient;)Landroid/webkit/WebViewClient;
                 move-result-object v1
