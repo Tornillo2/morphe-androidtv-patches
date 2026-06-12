@@ -16,13 +16,23 @@
     public static *** onClearVodAds(java.lang.Object);
     public static *** shouldBlock(java.lang.Object);
 }
-
+# Peacock — existing entry
+# emptyAdPlaybackState is called reflectively by the Sky SDK layer patches.
 -keep class ajstrick81.morphe.extension.peacock.ads.SkipAdsPatch {
     public static *** emptyAdPlaybackState(java.lang.Object);
 }
+
 # Peacock — Layer 6: OkHttp ad CDN interceptor
-# Morphe loads this via reflection when injecting into NetworkingKt.getOkHttpClient().
-# Keeping the class and constructor prevents R8 from stripping or renaming it.
+# AdBlockInterceptor is instantiated by PeacockAdPatchHelper at runtime.
+# Keeping the class and no-arg constructor prevents R8 from stripping it.
 -keep class ajstrick81.morphe.extension.peacock.ads.AdBlockInterceptor {
     public <init>();
+}
+
+# Peacock — Layer 6: zero-register wrapper
+# PeacockAdPatchHelper.injectAdBlocker() is called directly from injected smali
+# via invoke-static. R8 must not rename or remove this method — the smali
+# descriptor is hardcoded and will not survive obfuscation.
+-keep class ajstrick81.morphe.extension.peacock.ads.PeacockAdPatchHelper {
+    public static void injectAdBlocker(okhttp3.OkHttpClient$Builder);
 }
