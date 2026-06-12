@@ -62,3 +62,29 @@ internal object GetOkHttpClientFingerprint : Fingerprint(
             classDef.type == "Lcom/peacock/peacocktv/util/NetworkingKt;"
     },
 )
+
+// ── Layer 7 ──────────────────────────────────────────────────────────────────
+// Target: XTVWebView.<init>(Context)
+// Injection point: instruction index 54, immediately before the
+// setWebViewClient(xtvClient) call (bytecode offset 252).
+//
+// PCAP/GREASE fingerprinting confirmed that ad segment delivery and all
+// FreeWheel/analytics traffic travels through the Chromium network stack
+// inside XTVWebView, bypassing OkHttp entirely. xtvClient (XTVWebView$xtvClient$1)
+// extends WebViewClient but does NOT override shouldInterceptRequest.
+//
+// We intercept v1 (xtvClient instance) before it reaches setWebViewClient(),
+// wrapping it via PeacockWebViewHelper.wrapClient() which adds
+// shouldInterceptRequest() to block confirmed ad CDN and analytics hostnames.
+// Anchor: unique string "WebViewClient.onLoadResource." exists in xtvClient$1
+// (same dex slice), plus custom guard on class and method name.
+// Confirmed matching v7.5.102.
+internal object XtvClientWrapFingerprint : Fingerprint(
+    strings = listOf("WebViewClient.onLoadResource."),
+    custom = { method, classDef ->
+        method.name == "<init>" &&
+            method.parameters.size == 1 &&
+            method.parameters[0].type == "Landroid/content/Context;" &&
+            classDef.type == "Lcom/peacock/peacocktv/web/XTVWebView;"
+    },
+)
