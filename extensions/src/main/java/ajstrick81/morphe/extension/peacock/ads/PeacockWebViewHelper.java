@@ -1,6 +1,7 @@
 package ajstrick81.morphe.extension.peacock.ads;
 
 import android.util.Log;
+import android.webkit.ClientCertRequest;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
@@ -14,15 +15,11 @@ import java.io.ByteArrayInputStream;
  * wrapClient() wraps the existing xtvClient and adds shouldInterceptRequest()
  * to block confirmed ad/analytics hostnames via PCAP/GREASE fingerprinting.
  *
- * Logic:
- *   1. Any exception → return null (let Chromium handle it normally)
- *   2. Any peacocktv.com or nbcuni* URL → return null (never block own infra)
- *   3. Any confirmed ad host → return empty 200 response
- *   4. Everything else → return null (Chromium default, not original client)
- *
- * Note: xtvClient does NOT override shouldInterceptRequest, so calling
- * original.shouldInterceptRequest() would hit the WebViewClient base no-op.
- * Returning null is identical in behaviour and avoids any chaining issues.
+ * Critical: onReceivedClientCertRequest MUST be delegated. Peacock uses mutual
+ * TLS with a client certificate (com.peacock.peacocktv.tamper.Loader) to
+ * authenticate the app to its servers. Dropping this callback silently kills
+ * the TLS handshake and prevents the page from loading entirely — this was
+ * the root cause of the Puss in Boots error screen in all previous builds.
  */
 public class PeacockWebViewHelper {
 
@@ -60,18 +57,17 @@ public class PeacockWebViewHelper {
         Log.d(TAG, "PeacockWebViewHelper.wrapClient() — Layer 7 active");
         return new WebViewClient() {
 
+            // ── Interception ──────────────────────────────────────────────
             @Override
             public WebResourceResponse shouldInterceptRequest(
                     WebView view, WebResourceRequest request) {
                 try {
                     String url = request.getUrl().toString();
 
-                    // Always allow Peacock's own infrastructure
                     for (String safe : SAFE_HOSTS) {
                         if (url.contains(safe)) return null;
                     }
 
-                    // Block confirmed ad/analytics hosts
                     for (String ad : AD_HOSTS) {
                         if (url.contains(ad)) {
                             Log.d(TAG, "BLOCKED: " + url);
@@ -79,16 +75,25 @@ public class PeacockWebViewHelper {
                         }
                     }
 
-                    // All other URLs — let Chromium handle normally
                     return null;
 
                 } catch (Exception e) {
-                    // Never let our code crash the WebView
                     Log.e(TAG, "shouldInterceptRequest error: " + e.getMessage());
                     return null;
                 }
             }
 
+            // ── Critical: mutual TLS client certificate ───────────────────
+            // Peacock authenticates the app to its servers via a client cert
+            // stored in com.peacock.peacocktv.tamper.Loader. This MUST be
+            // delegated or the TLS handshake fails and the page never loads.
+            @Override
+            public void onReceivedClientCertRequest(WebView view,
+                    ClientCertRequest certRequest) {
+                original.onReceivedClientCertRequest(view, certRequest);
+            }
+
+            // ── Delegate all other xtvClient overrides ────────────────────
             @Override
             public void onPageStarted(WebView view, String url,
                     android.graphics.Bitmap favicon) {
