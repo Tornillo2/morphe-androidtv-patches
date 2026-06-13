@@ -16,12 +16,12 @@ I'm just like you — I enjoy watching TV and movies without being bored and ann
 
 | App | Package | Status | Tested Version | Date |
 |-----|---------|--------|---------------|------|
-| 🟢 Disney+ | `com.disney.disneyplus` | Working | `v26.6.0+rc5-2026.04.21` | Apr 27, 2026 |
-| 🟢 HBO Max | `com.wbd.hbomax` | Working | `v7.2.0.41` | May 5, 2026 |
-| 🟢 Tubi | `com.tubitv` | Working | `v10.20.5000` | May 20, 2026 |
-| 🟢 ViX | `com.univision.prendetv` | Working | `v4.46.0_tv` | May 19, 2026 |
-| 🟢 Peacock | `com.peacocktv.peacockandroid` | Working - Use with DNS filters: https://github.com/ajstrick81/Peacock-Ads | `v7.5.102` | Jun 13, 2026 |
-| 🟡 Prime Video | `com.amazon.amazonvideo.livingroom` | In Testing | `6.23.23+v15.5.0.70-armv7a` | May 5, 2026 |
+| 🟢 Disney+ | `com.disney.disneyplus` | Working | `v26.6.0+rc5-2026.04.21` | 4/27/26 |
+| 🟢 HBO Max | `com.wbd.hbomax` | Working | `v7.2.0.41` | 5/5/26 |
+| 🟢 Tubi | `com.tubitv` | Working | `v10.20.5000` | 5/20/26 |
+| 🟢 ViX | `com.univision.prendetv` | Working | `v4.46.0_tv` | 5/19/26 |
+| 🟢 Peacock | `com.peacocktv.peacockandroid` | Working - Use with DNS filters: https://github.com/ajstrick81/Peacock-Ads | `v7.5.102` | 6/13/26 |
+| 🟡 Prime Video | `com.amazon.amazonvideo.livingroom` | In Testing | `6.23.23+v15.5.0.70-armv7a` | 5/5/26 |
 | 🔴 Paramount+ | `com.cbs.ott` | In Development | `v16.8 → v16.12` | — |
 | 🔴 Fox Sports | **Under Development** | — |
 | 🔴 Fox One | **Under Development** | — |
