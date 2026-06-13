@@ -1,3 +1,10 @@
+## [1.4.66](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.65...v1.4.66) (2026-06-13)
+
+
+### Bug Fixes
+
+* push new version with refactor comments and logic in PeacockWebViewHelper ([2fa200f](https://github.com/ajstrick81/morphe-androidtv-patches/commit/2fa200ff70dbf1d62f22659c1e3bfbdbc6db5ce4))
+
 ## [1.4.65](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.64...v1.4.65) (2026-06-13)
 
 
