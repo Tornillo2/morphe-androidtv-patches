@@ -11,27 +11,29 @@ import java.io.ByteArrayInputStream;
 /**
  * Layer 7 — WebView shouldInterceptRequest injection.
  *
- * wrapClient() takes the existing xtvClient (XTVWebView$xtvClient$1, which extends
- * WebViewClient) and returns a new WebViewClient wrapper that:
- *  - Delegates ALL existing overrides to the original client (onPageStarted,
- *    onPageFinished, onLoadResource, onReceivedError, onReceivedHttpError,
- *    onReceivedSslError, onRenderProcessGone)
- *  - Adds shouldInterceptRequest() to block ad CDN and FreeWheel hostnames,
- *    returning an empty 200 response so Chromium doesn't surface an error
- *    to the JS layer.
+ * wrapClient() takes the existing xtvClient (XTVWebView$xtvClient$1) and returns
+ * a wrapper WebViewClient that delegates all existing callbacks and adds
+ * shouldInterceptRequest() to block ad CDN and FreeWheel hostnames confirmed
+ * via PCAP/GREASE fingerprinting.
  *
- * Called from the smali injection in XTVWebView.<init>(Context) immediately
- * before setWebViewClient() so the wrapper replaces xtvClient transparently.
+ * Safe-list: peacocktv.com and nbcuni.com subdomains are always allowed through,
+ * ensuring the initial page load and all content delivery is never blocked.
+ * Only explicit ad/analytics hostnames are intercepted.
  */
 public class PeacockWebViewHelper {
 
     private static final String TAG = "MORPHE-PCK-WV";
 
-    // Ad segment CDNs confirmed via PCAP/GREASE fingerprinting (Chromium traffic)
+    // Peacock-owned domains — never block anything under these
+    private static final String[] SAFE_HOSTS = {
+        "peacocktv.com",
+        "nbcuni.com",
+        "nbcuniversal.com",
+        "clients.peacocktv.com",
+    };
+
+    // Ad/analytics hosts confirmed via PCAP GREASE fingerprinting as Chromium traffic
     private static final String[] AD_HOSTS = {
-        "prd-fy.cdn.peacocktv.com",
-        "prd-ak.cdn.peacocktv.com",
-        "prd-cf.cdn.peacocktv.com",
         "fwmrm.net",
         "scorecardresearch.com",
         "imrworldwide.com",
@@ -43,13 +45,11 @@ public class PeacockWebViewHelper {
         "doubleclick.net",
         "rlcdn.com",
         "nbcuas.com",
+        "prd-fy.cdn.peacocktv.com",
+        "prd-ak.cdn.peacocktv.com",
+        "prd-cf.cdn.peacocktv.com",
     };
 
-    /**
-     * Returns an empty 200 WebResourceResponse — Chromium treats this as a
-     * successful load of zero bytes. The JS ad player gets an empty response
-     * and moves on rather than triggering an error recovery path.
-     */
     private static WebResourceResponse emptyResponse() {
         return new WebResourceResponse(
             "text/plain",
@@ -58,18 +58,20 @@ public class PeacockWebViewHelper {
         );
     }
 
+    private static boolean isSafeHost(String url) {
+        for (String host : SAFE_HOSTS) {
+            if (url.contains(host)) return true;
+        }
+        return false;
+    }
+
     private static boolean isAdHost(String url) {
-        if (url == null) return false;
         for (String host : AD_HOSTS) {
             if (url.contains(host)) return true;
         }
         return false;
     }
 
-    /**
-     * Wraps the existing xtvClient WebViewClient with our interceptor.
-     * The original client is retained as a delegate for all existing callbacks.
-     */
     public static WebViewClient wrapClient(final WebViewClient original) {
         Log.d(TAG, "PeacockWebViewHelper.wrapClient() — Layer 7 active");
         return new WebViewClient() {
@@ -79,10 +81,17 @@ public class PeacockWebViewHelper {
             public WebResourceResponse shouldInterceptRequest(
                     WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
+
+                // Safe-list check first — Peacock's own infrastructure is never blocked
+                if (isSafeHost(url)) {
+                    return original.shouldInterceptRequest(view, request);
+                }
+
                 if (isAdHost(url)) {
                     Log.d(TAG, "BLOCKED: " + url);
                     return emptyResponse();
                 }
+
                 return original.shouldInterceptRequest(view, request);
             }
 
