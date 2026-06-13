@@ -8,30 +8,34 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import java.io.ByteArrayInputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
 /**
  * Layer 7 — WebView shouldInterceptRequest injection.
  *
- * wrapClient() wraps the existing xtvClient and adds shouldInterceptRequest()
- * to block confirmed ad/analytics hostnames at the WebView/Chromium layer.
+ * Randomized response strategy: instead of returning an identical empty 200
+ * for every blocked request, we vary the response to mimic natural network
+ * variability. This avoids a detectable wall pattern in FreeWheel's fraud
+ * detection system, which flags devices that never complete ad views.
  *
- * Critical: onReceivedClientCertRequest MUST be delegated. Peacock uses mutual
- * TLS with a client certificate (com.peacock.peacocktv.tamper.Loader) to
- * authenticate the app to its servers. Dropping this callback silently kills
- * the TLS handshake and prevents the page from loading entirely.
+ * Response variation:
+ *   - 60% empty 200 OK (normal load, no content)
+ *   - 25% 204 No Content (server acknowledged, nothing to send)
+ *   - 15% random delay 50-200ms then 200 (simulates slow CDN response)
  *
- * AD_HOSTS strategy — four categories:
- *   1. Ad config endpoints (vac, sas) — kill ad decision before it starts
- *   2. FreeWheel CSAI — block ad requests and NBC ad tech
- *   3. MediaTailor SSAI — belt-and-suspenders alongside Layers 1/3/4
- *   4. Analytics — suppress impression/completion reporting
+ * Analytics hosts (scorecardresearch, imrworldwide, omtrdc) are still blocked
+ * but with higher 204 probability to look like server-side suppression rather
+ * than client-side blocking.
  *
- * SAFE_HOSTS always pass through — Peacock's own infrastructure is never blocked.
- * Netskrt CDN shards are blocked by pattern EXCEPT -ns suffix (content delivery).
+ * Critical: onReceivedClientCertRequest MUST be delegated — Peacock uses
+ * mutual TLS with a client certificate (com.peacock.peacocktv.tamper.Loader).
  */
 public class PeacockWebViewHelper {
 
     private static final String TAG = "MORPHE-PCK-WV";
+    private static final Random RANDOM = new Random();
 
     private static final String[] SAFE_HOSTS = {
         "peacocktv.com",
@@ -40,7 +44,7 @@ public class PeacockWebViewHelper {
     };
 
     private static final String[] AD_HOSTS = {
-        // ── Ad config — kills the ad decision pipeline before FreeWheel is contacted
+        // ── Ad config — kills ad decision pipeline before FreeWheel is contacted
         "vac.peacocktv.com",
         "sas.peacocktv.com",
 
@@ -55,47 +59,88 @@ public class PeacockWebViewHelper {
         "scorecardresearch.com",
         "imrworldwide.com",
         "omtrdc.net",
+        "conviva.com",
         "doubleverify.com",
         "adsafeprotected.com",
         "innovid.com",
         "agkn.com",
+        "placed.com",
         "doubleclick.net",
         "rlcdn.com",
         "nbcuas.com",
     };
 
-    // Netskrt CDN shards that serve ads — block all EXCEPT the -ns suffix
-    // which serves legitimate content. Mirrors the AGH negative lookahead rule:
-    // /^g\d{1,4}-[a-z0-9]+-us-cmaf-prd-(?!ns)[a-z0-9-]+\.prd\.pck\.netskrt\.net$/
+    // Netskrt CDN — block all shards except -ns (content delivery)
     private static final String NETSKRT_DOMAIN = ".prd.pck.netskrt.net";
     private static final String NETSKRT_SAFE_SUFFIX = "-ns.prd.pck.netskrt.net";
 
-    private static WebResourceResponse emptyResponse() {
+    /**
+     * Returns a randomized empty response to avoid a detectable uniform
+     * blocking pattern. Varies status code and introduces occasional delays.
+     *
+     * @param isAnalytics true for pure analytics hosts — higher 204 probability
+     *                    to mimic server-side suppression
+     */
+    private static WebResourceResponse randomResponse(boolean isAnalytics) {
+        int roll = RANDOM.nextInt(100);
+
+        // Occasionally add a small delay to mimic slow/busy CDN
+        if (roll < 15) {
+            try {
+                Thread.sleep(50 + RANDOM.nextInt(150)); // 50–200ms
+            } catch (InterruptedException ignored) {}
+        }
+
+        // Vary status code
+        int statusCode;
+        String reasonPhrase;
+        if (isAnalytics) {
+            // Analytics: higher probability of 204 — looks like server accepted
+            // the beacon but has nothing to return, which is normal behaviour
+            statusCode = (roll < 50) ? 204 : 200;
+            reasonPhrase = (statusCode == 204) ? "No Content" : "OK";
+        } else {
+            // Ad video: mix of 200 and 204
+            statusCode = (roll < 25) ? 204 : 200;
+            reasonPhrase = (statusCode == 204) ? "No Content" : "OK";
+        }
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Content-Length", "0");
+        headers.put("Connection", "close");
+
         return new WebResourceResponse(
             "text/plain",
             "utf-8",
+            statusCode,
+            reasonPhrase,
+            headers,
             new ByteArrayInputStream(new byte[0])
         );
     }
 
-    private static boolean shouldBlock(String url) {
-        // Safe-list — Peacock's own infrastructure always passes through
-        // Note: vac.peacocktv.com and sas.peacocktv.com are subdomains of
-        // peacocktv.com, so we check AD_HOSTS BEFORE the safe-list for those.
-        // We handle this by checking AD_HOSTS first, then safe-list.
+    private static boolean isAnalyticsHost(String url) {
+        return url.contains("scorecardresearch.com")
+            || url.contains("imrworldwide.com")
+            || url.contains("omtrdc.net")
+            || url.contains("conviva.com")
+            || url.contains("doubleverify.com")
+            || url.contains("adsafeprotected.com")
+            || url.contains("placed.com");
+    }
 
-        // Ad config endpoints — check before safe-list since they're
-        // subdomains of peacocktv.com but we want to block them
+    private static boolean shouldBlock(String url) {
+        // Ad config endpoints — check before safe-list (subdomains of peacocktv.com)
         if (url.contains("vac.peacocktv.com") || url.contains("sas.peacocktv.com")) {
             return true;
         }
 
-        // Safe-list check
+        // Safe-list — Peacock's own infrastructure always passes through
         for (String safe : SAFE_HOSTS) {
             if (url.contains(safe)) return false;
         }
 
-        // Netskrt CDN — block all shards except -ns (content)
+        // Netskrt CDN — block all except -ns content shard
         if (url.contains(NETSKRT_DOMAIN) && !url.contains(NETSKRT_SAFE_SUFFIX)) {
             return true;
         }
@@ -109,7 +154,7 @@ public class PeacockWebViewHelper {
     }
 
     public static WebViewClient wrapClient(final WebViewClient original) {
-        Log.d(TAG, "PeacockWebViewHelper.wrapClient() — Layer 7 active");
+        Log.d(TAG, "PeacockWebViewHelper.wrapClient() — Layer 7 active (randomized responses)");
         return new WebViewClient() {
 
             @Override
@@ -118,8 +163,9 @@ public class PeacockWebViewHelper {
                 try {
                     String url = request.getUrl().toString();
                     if (shouldBlock(url)) {
-                        Log.d(TAG, "BLOCKED: " + url);
-                        return emptyResponse();
+                        boolean analytics = isAnalyticsHost(url);
+                        Log.d(TAG, "BLOCKED [" + (analytics ? "analytics" : "ad") + "]: " + url);
+                        return randomResponse(analytics);
                     }
                     return null;
                 } catch (Exception e) {
