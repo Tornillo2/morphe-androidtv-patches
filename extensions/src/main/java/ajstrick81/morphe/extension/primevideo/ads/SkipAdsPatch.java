@@ -8,44 +8,42 @@ import java.util.Map;
  *
  * Entry points called from patched bytecode:
  *
- *   skipAllMedia3AdGroups — transforms the media3 AdPlaybackState map
- *   skipAllExo2AdGroups   — same for the ExoPlayer2 / GMS Ads variant
- *   isAdSegmentUrl        — checks if a URL is a known ad CDN segment
+ *   skipAllMedia3AdGroups — strips ad schedule from media3 AdPlaybackState map
+ *   skipAllExo2AdGroups   — same for ExoPlayer2 / GMS Ads variant
+ *   seekToAdBreakEnd      — seeks player past current ad break (hoodles-inspired)
  *
- * --- AdPlaybackState suppression (Hooks 1 & 2) ---
+ * --- seekToAdBreakEnd: The Hoodles-Inspired Seek Technique ---
  *
- * withRemovedAdGroupCount(adGroupCount) physically removes all ad groups
- * from the AdPlaybackState before ExoPlayer sees the map. Operates at
- * the ad schedule layer — suppresses mid-roll ad state machine.
+ * Inspired by hoodles' Prime Video Mobile patch which hooks
+ * ServerInsertedAdBreakState.enter(state, trigger, player) to seek past
+ * ad breaks using direct player control.
  *
- * --- Segment delivery filter (Hook 3) ---
+ * The ATV equivalent hook point is
+ * ServerSideAdInsertionUtil.getStreamPositionUs(Player, AdPlaybackState)
+ * which is called during active ad playback with live references to both
+ * the Player and the AdPlaybackState.
  *
- * isAdSegmentUrl() is called at index 0 of DefaultHttpDataSource.open().
- * Checks the URL being fetched against PCAP-confirmed ad CDN patterns.
- * Returns true for ad segment URLs — the caller then returns 0L (empty
- * segment) before any network connection is established.
+ * The parallel:
+ *   Hoodles mobile: trigger.getBreak().getDurationExcludingAux()
+ *   Our ATV:        adPlaybackState.getAdGroup(i).durationsUs[j]
  *
- * This operates at the segment delivery layer which fires BEFORE the WASM
- * runtime pre-buffers ad content — enabling pre-roll suppression that
- * setAdPlaybackStates alone cannot achieve due to timing constraints.
+ *   Hoodles mobile: player.seekTo(adBreakEndMs)
+ *   Our ATV:        player.seekTo(currentPositionMs + remainingAdDurationMs)
  *
- * Ad URL patterns (PCAP-validated from Onn 4K TV session analysis):
- *   avoddashs3ww      — Akamai ad video CDN
- *   aivottevtad       — Akamai ad event tracking CDN
- *   vod-dash-pv-ta    — Amazon Akamai CDN (pv-ta = Prime Video Targeted Ads)
- *   ters-             — SGAI ad stitching servers (ters-sgai1, ters-draper1 etc)
- *   aiv-delivery.net  — combined with ters- to avoid blocking content manifest
- *   vod-dash.main.amazon.pv-cdn.net    — Amazon PV-CDN ad segments
- *   pop-vod-dash.main.amazon.pv-cdn.net — Amazon PV-CDN pop variant
- *   emt-cf.live.pv-cdn.net             — Amazon live stream ad CDN
+ * Algorithm:
+ *   1. Check isPlayingAd() — return immediately if not in an ad
+ *   2. Get currentAdGroupIndex from player
+ *   3. Get currentAdIndexInAdGroup from player
+ *   4. Sum remaining ad durations in the group starting from current ad
+ *   5. Convert microseconds to milliseconds (durationsUs → durationMs)
+ *   6. seekTo(currentPosition + remainingDuration)
  *
- * Explicitly excluded (content delivery):
- *   cf-trickplay      — scrubber thumbnail CDN (safe harbor)
- *   cf-timedtext      — subtitle/caption CDN (safe harbor)
- *   api.us-east-1     — content manifest API (safe harbor)
+ * This operates DURING ad playback — after the WASM pre-buffers segments
+ * but while they're playing. Combined with setAdPlaybackStates (prevents
+ * new ad groups from being scheduled) this covers both pre-roll timing
+ * gap and active mid-roll playback.
  *
- * All methods wrapped in try/catch — any failure returns safe defaults
- * so playback degrades gracefully.
+ * All methods wrapped in try/catch — any failure is a silent no-op.
  */
 @SuppressWarnings({"unused", "unchecked", "rawtypes"})
 public class SkipAdsPatch {
@@ -79,8 +77,7 @@ public class SkipAdsPatch {
     }
 
     /**
-     * Transforms an AdPlaybackState map for the ExoPlayer2 SSAI pipeline
-     * bundled inside the Google Mobile Ads SDK (classes4.dex).
+     * Transforms an AdPlaybackState map for the ExoPlayer2 SSAI pipeline.
      *
      * Called at index 0 of:
      *   com.google.android.exoplayer2.source.ads.ServerSideAdInsertionMediaSource
@@ -105,56 +102,68 @@ public class SkipAdsPatch {
         }
     }
 
-    // ── Segment delivery filter ────────────────────────────────────────────────
+    // ── Hoodles-inspired seek technique ───────────────────────────────────────
 
     /**
-     * Returns true if the given URL is a known ad segment CDN endpoint.
+     * Seeks the player past the current ad break.
      *
-     * Called at index 0 of DefaultHttpDataSource.open(DataSpec).
-     * When true, the caller returns 0L (empty segment) immediately,
-     * preventing any network connection to the ad CDN.
+     * Called at index 0 of:
+     *   ServerSideAdInsertionUtil.getStreamPositionUs(Player, AdPlaybackState)
      *
-     * URL patterns are derived from PCAPdroid captures on Onn 4K TV
-     * running Prime Video ATV v6.23.23 during pre-roll and mid-roll
-     * ad sessions. Content delivery domains are explicitly excluded.
+     * This method is only called when media3 needs to calculate the stream
+     * position during ad playback — meaning isPlayingAd() is true and we
+     * have a live player reference to seek with.
      *
-     * @param url The full URL string from DataSpec.uri.toString()
-     * @return true if the URL is an ad segment that should be blocked
+     * The seek target is:
+     *   currentPosition + sum of remaining ad durations in the current group
+     *   (in milliseconds, converted from microseconds)
+     *
+     * After seeking, the WASM playback::machine's setAdPlaybackStates hook
+     * (Hook 1) will fire with the new position's AdPlaybackState, where
+     * withRemovedAdGroupCount() will clean up any remaining ad groups.
+     *
+     * @param player          Live Player interface reference from p0
+     * @param adPlaybackState Current AdPlaybackState from p1
      */
-    public static boolean isAdSegmentUrl(String url) {
-        if (url == null || url.isEmpty()) return false;
+    public static void seekToAdBreakEnd(
+            androidx.media3.common.Player player,
+            androidx.media3.common.AdPlaybackState adPlaybackState) {
         try {
-            // Akamai ad CDN variants (PCAP-confirmed)
-            if (url.contains("avoddashs3ww")) return true;
-            if (url.contains("aivottevtad")) return true;
+            // Only act when actually playing an ad
+            if (!player.isPlayingAd()) return;
 
-            // Amazon Akamaized ad CDN — "pv-ta" = Prime Video Targeted Ads
-            if (url.contains("vod-dash-pv-ta-amazon")) return true;
+            int adGroupIndex = player.getCurrentAdGroupIndex();
+            int adIndexInGroup = player.getCurrentAdIndexInAdGroup();
 
-            // TERS SGAI ad stitching servers — wildcard catches all rotations
-            // (ters-sgai1, ters-draper1, etc.)
-            // Explicitly exclude api.us-east-1.aiv-delivery.net (content manifest)
-            if (url.contains("ters-") && url.contains("aiv-delivery.net")) return true;
+            // Validate indices
+            if (adGroupIndex < 0 || adGroupIndex >= adPlaybackState.adGroupCount) return;
 
-            // Amazon PV-CDN ad segment delivery
-            // Explicitly exclude cf-trickplay and cf-timedtext (content delivery)
-            if (url.contains("pv-cdn.net")) {
-                if (url.contains("cf-trickplay")) return false;
-                if (url.contains("cf-timedtext")) return false;
-                if (url.contains("vod-dash.main.amazon")) return true;
-                if (url.contains("pop-vod-dash.main.amazon")) return true;
-                if (url.contains("emt-cf.live")) return true;
-                if (url.contains("emt-fastly.live")) return true;
-                // Known ad prefix patterns from PCAP
-                if (url.contains("abgqa65")) return true;
-                if (url.contains("abepmbf")) return true;
-                if (url.contains("abgarbv")) return true;
+            androidx.media3.common.AdPlaybackState.AdGroup adGroup =
+                    adPlaybackState.getAdGroup(adGroupIndex);
+
+            if (adGroup == null || adGroup.durationsUs == null) return;
+
+            // Sum remaining ad durations from current ad to end of group
+            // durationsUs is in microseconds — convert to milliseconds for seekTo
+            long remainingDurationUs = 0L;
+            int startIndex = Math.max(0, adIndexInGroup);
+            for (int i = startIndex; i < adGroup.count && i < adGroup.durationsUs.length; i++) {
+                long dur = adGroup.durationsUs[i];
+                // Skip unknown/unset durations (C.TIME_UNSET = Long.MIN_VALUE + 1)
+                if (dur > 0) remainingDurationUs += dur;
             }
 
-            return false;
+            if (remainingDurationUs <= 0) return;
+
+            // Convert microseconds to milliseconds
+            long remainingDurationMs = remainingDurationUs / 1000L;
+
+            // Seek past the ad break
+            long currentPositionMs = player.getCurrentPosition();
+            player.seekTo(currentPositionMs + remainingDurationMs);
+
         } catch (Exception e) {
-            // Safe default — allow the request through on any error
-            return false;
+            // Silent fail — never interfere with original getStreamPositionUs
         }
     }
 }
