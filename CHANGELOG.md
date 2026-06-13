@@ -1,3 +1,10 @@
+## [1.4.63](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.62...v1.4.63) (2026-06-13)
+
+
+### Bug Fixes
+
+* Add client cert request handling and improve comments ([c60a808](https://github.com/ajstrick81/morphe-androidtv-patches/commit/c60a808c522d1df1e1a761cd7bc0331a0ab572bd))
+
 ## [1.4.62](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.61...v1.4.62) (2026-06-13)
 
 
