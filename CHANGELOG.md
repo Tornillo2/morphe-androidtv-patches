@@ -1,3 +1,10 @@
+## [1.4.60](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.59...v1.4.60) (2026-06-13)
+
+
+### Bug Fixes
+
+* update and Improve comments in Fingerprints.kt for XTVWebView ([bc4d815](https://github.com/ajstrick81/morphe-androidtv-patches/commit/bc4d81536923685d624639ead1772d96d6231ea5))
+
 ## [1.4.59](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.58...v1.4.59) (2026-06-12)
 
 
