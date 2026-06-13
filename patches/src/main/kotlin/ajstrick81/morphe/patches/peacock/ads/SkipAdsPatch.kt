@@ -109,7 +109,7 @@ val skipAdsPatch = bytecodePatch(
         // shouldInterceptRequest() returning an empty 200 response for confirmed
         // ad CDN and FreeWheel hostnames.
         XtvClientWrapFingerprint.method.addInstructions(
-            54,
+            56,
             """
                 invoke-static {v1}, Lajstrick81/morphe/extension/peacock/ads/PeacockWebViewHelper;->wrapClient(Landroid/webkit/WebViewClient;)Landroid/webkit/WebViewClient;
                 move-result-object v1
