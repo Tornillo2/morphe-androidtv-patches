@@ -7,46 +7,67 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 import java.io.IOException;
+import java.util.Random;
 
 /**
- * Peacock ATV — OkHttp ad CDN interceptor.
+ * Peacock ATV — OkHttp ad CDN interceptor (Layer 6).
  *
- * Returns a 503 for all known Peacock ad delivery CDN domains and analytics
- * endpoints before any connection is made. Using 503 (not 200) ensures
- * ExoPlayer's error-handling path fires instead of the media parser, which
- * would throw an UnrecognizedInputFormatException on a 0-byte body.
+ * Intercepts known ad CDN hostnames and analytics endpoints at the OkHttp
+ * layer before any connection is made. Mirrors the Layer 7 WebView strategy
+ * with randomized responses to avoid a detectable uniform blocking pattern
+ * in FreeWheel's fraud detection system.
  *
- * Mirrors what AGH does at the DNS level but works standalone inside the app.
- * Invoked via PeacockAdPatchHelper.injectAdBlocker() to avoid smali register
- * manipulation entirely (zero-register wrapper pattern).
+ * Response strategy (matches PeacockWebViewHelper):
+ *   - Ad CDN hosts:   75% 503, 25% 204, with occasional 50–200ms delay
+ *   - Analytics hosts: 50% 204, 50% 200, with occasional delay
  *
- * Ad CDNs (identified via AGH DNS log, live ad break capture):
- *   *-prd-fy.cdn.peacocktv.com  (Fastly)
- *   *-prd-ak.cdn.peacocktv.com  (Akamai)
- *   *-prd-cf.cdn.peacocktv.com  (Cloudflare)
+ * Why 503 for ad CDN (not 200):
+ *   503 triggers ExoPlayer's error/skip logic rather than the media parser.
+ *   A 200 with a 0-byte body causes UnrecognizedInputFormatException.
+ *   204 is safe for non-video endpoints (analytics beacons).
  *
  * Safe CDNs — never intercepted:
- *   *-prd-mc.cdn.peacocktv.com
- *   *-prd-ns.prd.pck.netskrt.net
+ *   *-prd-mc.cdn.peacocktv.com  (slate/fallback content)
+ *   *-prd-ns.prd.pck.netskrt.net (content delivery)
  *
- * Suffix matching covers future group IDs (g007, g008, etc.) automatically.
+ * PCAP confirmed: ad segment traffic is primarily Chromium/WebView (Layer 7).
+ * This interceptor catches OkHttp-reachable ad traffic — manifest fetches,
+ * analytics beacons, and any CDN connections that leak through the connection
+ * pool during extended sessions.
  */
 @SuppressWarnings("unused")
 public class AdBlockInterceptor implements Interceptor {
 
+    private static final Random RANDOM = new Random();
+
+    // Ad CDN shards confirmed via PCAP/AGH log analysis
+    // Suffix matching covers future group IDs (g007, g008, etc.) automatically
     private static final String[] AD_CDN_SUFFIXES = {
         "prd-fy.cdn.peacocktv.com",
         "prd-ak.cdn.peacocktv.com",
         "prd-cf.cdn.peacocktv.com",
     };
 
+    // Analytics and ad decision endpoints reachable via OkHttp
     private static final String[] ANALYTICS_DOMAINS = {
+        "vac.peacocktv.com",
+        "sas.peacocktv.com",
         "fwmrm.net",
+        "video-ads-module.ad-tech.nbcuni.com",
+        "mediatailor.",
         "scorecardresearch.com",
         "conviva.com",
         "imrworldwide.com",
         "omtrdc.net",
         "newrelic.com",
+        "doubleverify.com",
+        "adsafeprotected.com",
+        "innovid.com",
+        "agkn.com",
+        "placed.com",
+        "doubleclick.net",
+        "rlcdn.com",
+        "nbcuas.com",
     };
 
     @Override
@@ -55,13 +76,13 @@ public class AdBlockInterceptor implements Interceptor {
 
         for (final String suffix : AD_CDN_SUFFIXES) {
             if (host.endsWith(suffix)) {
-                return blockedResponse(chain);
+                return randomAdResponse(chain);
             }
         }
 
         for (final String domain : ANALYTICS_DOMAINS) {
             if (host.contains(domain)) {
-                return blockedResponse(chain);
+                return randomAnalyticsResponse(chain);
             }
         }
 
@@ -69,21 +90,54 @@ public class AdBlockInterceptor implements Interceptor {
     }
 
     /**
-     * Returns 503 Service Unavailable.
-     *
-     * 503 triggers the player's internal error/skip logic rather than the
-     * media parser. A 200 with a 0-byte body would cause the parser to throw
-     * an UnrecognizedInputFormatException, crashing the playback loop.
+     * Randomized response for ad video CDN requests.
+     * Uses 503 as primary to trigger ExoPlayer's error/skip path.
+     * Mixes in 204 and occasional delays to avoid uniform blocking pattern.
      */
-    private static Response blockedResponse(final Chain chain) {
+    private static Response randomAdResponse(final Chain chain) {
+        int roll = RANDOM.nextInt(100);
+
+        if (roll < 15) {
+            try { Thread.sleep(50 + RANDOM.nextInt(150)); }
+            catch (InterruptedException ignored) {}
+        }
+
+        int code = (roll < 25) ? 204 : 503;
+        String message = (code == 204) ? "No Content" : "Service Unavailable";
+
         return new Response.Builder()
             .request(chain.request())
             .protocol(Protocol.HTTP_1_1)
-            .code(503)
-            .message("Service Unavailable")
+            .code(code)
+            .message(message)
             .body(ResponseBody.create(
-                MediaType.parse("text/plain; charset=utf-8"),
-                "Blocked"))
+                MediaType.parse("text/plain; charset=utf-8"), ""))
+            .build();
+    }
+
+    /**
+     * Randomized response for analytics/beacon endpoints.
+     * Uses 204 as primary — normal server behaviour for accepted beacons.
+     * Looks like server-side suppression rather than client-side blocking.
+     */
+    private static Response randomAnalyticsResponse(final Chain chain) {
+        int roll = RANDOM.nextInt(100);
+
+        if (roll < 15) {
+            try { Thread.sleep(50 + RANDOM.nextInt(150)); }
+            catch (InterruptedException ignored) {}
+        }
+
+        int code = (roll < 50) ? 204 : 200;
+        String message = (code == 204) ? "No Content" : "OK";
+
+        return new Response.Builder()
+            .request(chain.request())
+            .protocol(Protocol.HTTP_1_1)
+            .code(code)
+            .message(message)
+            .body(ResponseBody.create(
+                MediaType.parse("text/plain; charset=utf-8"), ""))
             .build();
     }
 }
