@@ -11,28 +11,29 @@ import java.io.ByteArrayInputStream;
 /**
  * Layer 7 — WebView shouldInterceptRequest injection.
  *
- * wrapClient() takes the existing xtvClient (XTVWebView$xtvClient$1) and returns
- * a wrapper WebViewClient that delegates all existing callbacks and adds
- * shouldInterceptRequest() to block ad CDN and FreeWheel hostnames confirmed
- * via PCAP/GREASE fingerprinting.
+ * wrapClient() wraps the existing xtvClient and adds shouldInterceptRequest()
+ * to block confirmed ad/analytics hostnames via PCAP/GREASE fingerprinting.
  *
- * Safe-list: peacocktv.com and nbcuni.com subdomains are always allowed through,
- * ensuring the initial page load and all content delivery is never blocked.
- * Only explicit ad/analytics hostnames are intercepted.
+ * Logic:
+ *   1. Any exception → return null (let Chromium handle it normally)
+ *   2. Any peacocktv.com or nbcuni* URL → return null (never block own infra)
+ *   3. Any confirmed ad host → return empty 200 response
+ *   4. Everything else → return null (Chromium default, not original client)
+ *
+ * Note: xtvClient does NOT override shouldInterceptRequest, so calling
+ * original.shouldInterceptRequest() would hit the WebViewClient base no-op.
+ * Returning null is identical in behaviour and avoids any chaining issues.
  */
 public class PeacockWebViewHelper {
 
     private static final String TAG = "MORPHE-PCK-WV";
 
-    // Peacock-owned domains — never block anything under these
     private static final String[] SAFE_HOSTS = {
         "peacocktv.com",
         "nbcuni.com",
         "nbcuniversal.com",
-        "clients.peacocktv.com",
     };
 
-    // Ad/analytics hosts confirmed via PCAP GREASE fingerprinting as Chromium traffic
     private static final String[] AD_HOSTS = {
         "fwmrm.net",
         "scorecardresearch.com",
@@ -45,9 +46,6 @@ public class PeacockWebViewHelper {
         "doubleclick.net",
         "rlcdn.com",
         "nbcuas.com",
-        "prd-fy.cdn.peacocktv.com",
-        "prd-ak.cdn.peacocktv.com",
-        "prd-cf.cdn.peacocktv.com",
     };
 
     private static WebResourceResponse emptyResponse() {
@@ -58,44 +56,39 @@ public class PeacockWebViewHelper {
         );
     }
 
-    private static boolean isSafeHost(String url) {
-        for (String host : SAFE_HOSTS) {
-            if (url.contains(host)) return true;
-        }
-        return false;
-    }
-
-    private static boolean isAdHost(String url) {
-        for (String host : AD_HOSTS) {
-            if (url.contains(host)) return true;
-        }
-        return false;
-    }
-
     public static WebViewClient wrapClient(final WebViewClient original) {
         Log.d(TAG, "PeacockWebViewHelper.wrapClient() — Layer 7 active");
         return new WebViewClient() {
 
-            // ── Interception ─────────────────────────────────────────────
             @Override
             public WebResourceResponse shouldInterceptRequest(
                     WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
+                try {
+                    String url = request.getUrl().toString();
 
-                // Safe-list check first — Peacock's own infrastructure is never blocked
-                if (isSafeHost(url)) {
-                    return original.shouldInterceptRequest(view, request);
+                    // Always allow Peacock's own infrastructure
+                    for (String safe : SAFE_HOSTS) {
+                        if (url.contains(safe)) return null;
+                    }
+
+                    // Block confirmed ad/analytics hosts
+                    for (String ad : AD_HOSTS) {
+                        if (url.contains(ad)) {
+                            Log.d(TAG, "BLOCKED: " + url);
+                            return emptyResponse();
+                        }
+                    }
+
+                    // All other URLs — let Chromium handle normally
+                    return null;
+
+                } catch (Exception e) {
+                    // Never let our code crash the WebView
+                    Log.e(TAG, "shouldInterceptRequest error: " + e.getMessage());
+                    return null;
                 }
-
-                if (isAdHost(url)) {
-                    Log.d(TAG, "BLOCKED: " + url);
-                    return emptyResponse();
-                }
-
-                return original.shouldInterceptRequest(view, request);
             }
 
-            // ── Delegate all existing xtvClient overrides ─────────────────
             @Override
             public void onPageStarted(WebView view, String url,
                     android.graphics.Bitmap favicon) {
