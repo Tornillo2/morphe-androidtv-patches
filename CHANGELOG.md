@@ -1,3 +1,10 @@
+## [1.4.68](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.67...v1.4.68) (2026-06-14)
+
+
+### Bug Fixes
+
+* push new version with Update Disney+ compatibility targets ([ef74d13](https://github.com/ajstrick81/morphe-androidtv-patches/commit/ef74d136763c00195ca18390dad3fbff64eaa147))
+
 ## [1.4.67](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.66...v1.4.67) (2026-06-13)
 
 
