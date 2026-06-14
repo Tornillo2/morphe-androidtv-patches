@@ -1,3 +1,10 @@
+## [1.4.69](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.68...v1.4.69) (2026-06-14)
+
+
+### Bug Fixes
+
+* new version push by adding target version to PARAMOUNT_TV compatibility ([ac43dd1](https://github.com/ajstrick81/morphe-androidtv-patches/commit/ac43dd1dbb4c92abc96f717beb5c1fc8c944dd1f))
+
 ## [1.4.68](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.67...v1.4.68) (2026-06-14)
 
 

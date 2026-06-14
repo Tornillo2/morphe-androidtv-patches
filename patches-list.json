@@ -1,5 +1,5 @@
 {
-  "version": "1.4.68",
+  "version": "1.4.69",
   "appNames": {
     "com.fox.foxone": "Fox One Android TV",
     "com.foxsports.android": "Fox Sports Android TV",
@@ -76,11 +76,12 @@
     },
     {
       "name": "Paramount+ Android TV",
-      "description": "Removes pause ads, pre-roll ads, and mid-roll ads.",
+      "description": "Removes VOD ads and pause ads while preserving live TV.",
       "use": true,
       "dependencies": [],
       "compatiblePackages": {
         "com.cbs.ott": [
+          "16.8.0",
           "16.12.0"
         ]
       },
@@ -91,6 +92,10 @@
           "description": null,
           "appIconColor": 25855,
           "targets": [
+            {
+              "version": "16.8.0",
+              "experimental": false
+            },
             {
               "version": "16.12.0",
               "experimental": false
