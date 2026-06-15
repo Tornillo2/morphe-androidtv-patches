@@ -74,7 +74,7 @@ val paramountPatch = bytecodePatch(
                 0,
                 """
                     new-instance v0, Lcom/google/ads/interactivemedia/v3/impl/zzcx;
-                    sget-object v1, Lcom/google/ads/interactivemedia/v3/internal/zzafv;->zzd Lcom/google/ads/interactivemedia/v3/internal/zzafv;
+                    sget-object v1, Lcom/google/ads/interactivemedia/v3/internal/zzafv;->zzd:Lcom/google/ads/interactivemedia/v3/internal/zzafv;
                     invoke-direct {v0, v1}, Lcom/google/ads/interactivemedia/v3/impl/zzcx;-><init>(Lcom/google/ads/interactivemedia/v3/internal/zzafv;)V
                     return-object v0
                 """.trimIndent(),
