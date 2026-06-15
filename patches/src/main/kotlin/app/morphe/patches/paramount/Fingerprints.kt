@@ -4,30 +4,48 @@
  * Validated against:
  *   v16.8.0  (versionCode 520000464) — com.cbs.ott
  *
- * Strategy confirmed via logcat + ImaSdkFactory.smali analysis:
+ * AD SUPPRESSION MECHANISM (confirmed via APK analysis of v16.8.0):
  *
- *   VOD has a pre-fetched resourceUrl (cbsaavideo.com) that AVIA holds
- *   before attempting DAI. When DAI initialization fails non-critically
- *   (null StreamRequest → null guard fires), AVIA falls back to that
- *   direct URL and plays content without SSAI ads.
+ *   g1.c() builds the player media source (nm0.c) from ek0.s (content URI)
+ *   BEFORE DAI initialization begins. This runs for all resource config types:
+ *     Lwmg (simple URI), Ln27 (IMA resource), Luf3 (DAI/SSAI)
  *
- *   Live TV has NO pre-fetched URL. DAI is the only source of the manifest.
- *   Patching createLiveStreamRequest() would kill live TV entirely.
+ *   For VOD:      uf3.ek0.s = cbsaavideo.com DASH manifest URL (non-null)
+ *                 g1.c() → nm0.c = valid media source
+ *                 DAI fails → AVIA uses nm0.c → content plays without SSAI ads
  *
- *   Returning null from createVodStreamRequest() triggers the null guard
- *   in pk0.run() ("DAI AdsLoader or StreamRequest is null") — a non-critical
- *   log path — allowing the fallback. Returning an empty zzcx causes
- *   requestStream(emptyZzcx) to be called, which throws a critical IMA
- *   exception (error 6007) that terminates playback instead of falling back.
+ *   For live TV:  uf3.ek0.s = null (no pre-DAI content URL exists)
+ *                 g1.c() → nm0.c = null
+ *                 DAI fails → nm0.c = null → black screen
  *
- * Active patches:
- *   1. VodStreamRequest3ArgFingerprint — return null (non-critical DAI fail)
- *   2. VodStreamRequest4ArgFingerprint — return null (non-critical DAI fail)
- *   3. PauseAdOverlayFingerprint       — pause ad overlay suppression
+ *   Therefore: the fallback is inherently self-regulating. Causing DAI to
+ *   fail gracefully suppresses VOD SSAI ads while live TV requires DAI to
+ *   succeed (since it has no ek0.s fallback URL). Live TV is NOT patched.
  *
- * NOT patched (intentional):
- *   createLiveStreamRequest() — live TV has no fallback URL
- *   createPodStreamRequest()  — same reason
+ * STRATEGY:
+ *   Return an empty (but non-null) zzcx StreamRequest from createVodStreamRequest().
+ *   vk0.C is non-null → passes null guard → requestStream(emptyZzcx) is called →
+ *   IMA SDK throws (no content source or video ID set) → exception caught by
+ *   pk0.run() try-catch → dispatched as ErrorCriticalEvent → AVIA error handler
+ *   detects nm0.c is valid → falls back to cbsaavideo.com → VOD plays without ads.
+ *
+ *   Live TV uses createLiveStreamRequest() — completely separate code path at
+ *   pk0.run()[147] — unaffected by these fingerprints.
+ *
+ *   NOTE: This approach was previously tested WITH AdStartedFingerprint and
+ *   AdSkipFingerprint active, which corrupted player state and blocked the
+ *   nm0.c fallback path. This build contains ONLY these two patches + pause ads.
+ *
+ * isLive check location in pk0.run():
+ *   [135] invoke-virtual v3, Lek0;->b()Z
+ *   [137] if-eqz v3, +1a   → if NOT live (VOD), goto VOD path [151]
+ *   [147] createLiveStreamRequest()  ← live TV (untouched)
+ *   [160] createVodStreamRequest()   ← VOD (patched)
+ *
+ * Stream type enum (k33):
+ *   k33.b = VOD  (ek0.b() returns false)
+ *   k33.c = LIVE (ek0.b() returns true)
+ *   k33.d = DVR
  */
 
 package app.morphe.patches.paramount
@@ -35,23 +53,15 @@ package app.morphe.patches.paramount
 import app.morphe.patcher.Fingerprint
 
 // ---------------------------------------------------------------------------
-// Patch 1 & 2: VOD SSAI — createVodStreamRequest (3-arg and 4-arg)
+// Patch 1a: VOD SSAI — createVodStreamRequest (3-arg)
 //
-// Both overloads confirmed in ImaSdkFactory.smali v16.8.0:
+// Called by pk0.run()[160] for standard VOD content.
+// Returns a valid but empty zzcx object — no contentSourceId (zze),
+// no videoId (zzf), no apiKey (zzo) set. requestStream(emptyZzcx) throws
+// inside the IMA SDK, caught by pk0.run() try-catch, triggers the
+// ErrorCriticalEvent → AVIA falls back to nm0.c (cbsaavideo.com).
 //
-//   3-arg (deprecated, called by pk0.run() main SSAI path):
-//     zzafv;->zzd (TRUMAN_STITCHED_MANIFEST_VOD)
-//     zze(videoId), zzf(contentSourceId), zzo(apiKey)
-//
-//   4-arg (additional callers):
-//     zzafv;->zzd (same)
-//     zze, zzf, zzo, zzg(networkCode)
-//
-//   Live TV uses createLiveStreamRequest() → zzafv;->zzc (LINEAR) + zza(assetKey)
-//   Completely separate code path — unaffected by these fingerprints.
-//
-// Fingerprint strategy: ImaSdkFactory is fully unobfuscated (Google IMA SDK
-// public API). Method name stable. Parameter count differentiates overloads.
+// Fully unobfuscated (IMA SDK public API). Parameters: 3 Strings.
 // ---------------------------------------------------------------------------
 
 internal object VodStreamRequest3ArgFingerprint : Fingerprint(
@@ -65,6 +75,13 @@ internal object VodStreamRequest3ArgFingerprint : Fingerprint(
     },
 )
 
+// ---------------------------------------------------------------------------
+// Patch 1b: VOD SSAI — createVodStreamRequest (4-arg)
+//
+// Called by pk0.run() for VOD content with networkCode parameter.
+// Same strategy as 3-arg — empty zzcx, triggers IMA SDK exception.
+// ---------------------------------------------------------------------------
+
 internal object VodStreamRequest4ArgFingerprint : Fingerprint(
     returnType = "Lcom/google/ads/interactivemedia/v3/api/StreamRequest;",
     custom = { method, _ ->
@@ -77,14 +94,10 @@ internal object VodStreamRequest4ArgFingerprint : Fingerprint(
 )
 
 // ---------------------------------------------------------------------------
-// Patch 3: Pause ads — CbsPauseWithAdsOverlay state machine
+// Patch 2: Pause ads — CbsPauseWithAdsOverlay state machine
 //
-// Method name is minified and drifts between versions:
-//   v16.8.0  → P(CbsPauseWithAdsOverlay, uy1)V
-//   v16.12.0 → M(CbsPauseWithAdsOverlay, lz1)V
-//
-// Anchored on stable fallthrough-branch log strings. endsWith() handles
-// the package path migration between versions.
+// Independent of IMA DAI — unaffected by the VOD stream request patches.
+// Anchored on stable log strings. endsWith() handles package path migration.
 // ---------------------------------------------------------------------------
 
 internal object PauseAdOverlayFingerprint : Fingerprint(
