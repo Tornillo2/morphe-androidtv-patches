@@ -1,3 +1,12 @@
+## [1.4.70](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.69...v1.4.70) (2026-06-15)
+
+
+### Bug Fixes
+
+* Refactor ParamountPatch for ad suppression mechanism ([7f8f06f](https://github.com/ajstrick81/morphe-androidtv-patches/commit/7f8f06fa5befef65dfde245e56e67ab1f1de06fb))
+* Refactor VOD SSAI and pause ads fingerprint strategies ([cbb0117](https://github.com/ajstrick81/morphe-androidtv-patches/commit/cbb0117efda945e60b3fa78dcc11277f3f26ae69))
+* Update ParamountPatch to suppress VOD and pause ads ([2bd6988](https://github.com/ajstrick81/morphe-androidtv-patches/commit/2bd698808bbfde794ca2adb347849b85543d86ff))
+
 ## [1.4.69](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.68...v1.4.69) (2026-06-14)
 
 
