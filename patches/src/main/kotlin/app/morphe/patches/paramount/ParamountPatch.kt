@@ -5,36 +5,31 @@
  *   v16.8.0  (versionCode 520000464) — com.cbs.ott
  *
  * Coverage:
- *   ✅ VOD SSAI ads  — createVodStreamRequest() returns null → non-critical
- *                      DAI fail → AVIA falls back to cbsaavideo.com URL →
- *                      content plays without SSAI ads
+ *   ✅ VOD SSAI ads  — createVodStreamRequest() returns empty zzcx →
+ *                      IMA SDK throws → ErrorCriticalEvent → nm0.c fallback
+ *                      → content plays from cbsaavideo.com without SSAI ads
  *   ✅ Pause ads     — CbsPauseWithAdsOverlay state machine
- *   ➡️ Live TV ads   — untouched by design (no fallback URL exists for live)
+ *   ➡️ Live TV       — DAI untouched (live TV has no ek0.s fallback URL)
  *
- * KEY ARCHITECTURAL INSIGHT (confirmed via logcat + ImaSdkFactory.smali):
+ * EMPTY zzcx vs NULL:
+ *   NULL return:      vk0.C = null → null guard fires at pk0.run()[163-164]
+ *                     → silent retry loop → infinite spinner (NO fallback triggered)
  *
- *   VOD error payload always contains:
- *     "resourceUrl": "https://vod-gcs-cedexis.cbsaavideo.com/.../stream.mpd"
- *   This URL is fetched BEFORE DAI is attempted. When DAI fails non-critically
- *   (null StreamRequest → null guard fires in pk0.run()), AVIA falls back to
- *   this URL and plays content without SSAI ads.
+ *   EMPTY zzcx:       vk0.C = non-null (passes null guard) → requestStream()
+ *                     called with unpopulated params → IMA SDK throws exception
+ *                     → caught by pk0.run() try-catch → ErrorCriticalEvent
+ *                     → AVIA error handler → nm0.c fallback fires ✅
  *
- *   Live TV error payload has NO resourceUrl. DAI is the only manifest source.
- *   Patching createLiveStreamRequest() kills live TV completely.
+ * zzcx CONSTRUCTOR:
+ *   In v16.8.0, zzcx is constructed in createVodStreamRequest() as:
+ *     new-instance v0, Lcom/google/ads/interactivemedia/v3/impl/zzcx;
+ *     sget-object v1, zzafv;->zzd (VOD integration type)
+ *     invoke-direct v0, v1, zzcx;-><init>(zzafv)V
+ *   We replicate this without calling the setter chain (zze/zzf/zzo).
+ *   The object is valid but has no content parameters set.
  *
- * NULL vs EMPTY OBJECT — WHY NULL:
- *   Returning an empty zzcx (with no setters called) causes requestStream()
- *   to be called with invalid params → IMA SDK throws critical exception →
- *   error 6007 → AVIA terminates playback, no fallback.
- *
- *   Returning null causes the null guard in pk0.run() to fire:
- *     "DAI AdsLoader or StreamRequest is null, cannot request DAI stream."
- *   This is a non-critical log path → AVIA falls back to cbsaavideo.com.
- *
- * LIVE TV NOTE:
- *   createLiveStreamRequest() (both overloads) is NOT patched.
- *   Uses zzafv;->zzc (TRUMAN_STITCHED_MANIFEST_LINEAR) + zza(assetKey).
- *   Completely separate code path from createVodStreamRequest().
+ *   Register note: .registers 5 for 3-arg (p0=this, p1..p3=strings).
+ *   v0 = new zzcx, v1 = integration type constant. Safe to use both.
  */
 
 package app.morphe.patches.paramount
@@ -52,15 +47,24 @@ val paramountPatch = bytecodePatch(
 
     execute {
         // ------------------------------------------------------------------
-        // Patch 1 & 2: VOD SSAI — createVodStreamRequest (3-arg and 4-arg)
+        // Patch 1: VOD SSAI — createVodStreamRequest (3-arg and 4-arg)
         //
-        // Returning null triggers the null guard in pk0.run() rather than
-        // calling requestStream() with invalid params. This is the non-critical
-        // failure path that allows AVIA to fall back to the pre-fetched
-        // cbsaavideo.com content URL and play without SSAI ads.
+        // Returns a valid but empty zzcx StreamRequest. No contentSourceId,
+        // videoId, or apiKey setters are called. When pk0.run() passes this
+        // to requestStream(), the IMA SDK throws because the request has no
+        // parameters. The exception is caught by pk0.run()'s try-catch and
+        // dispatched as ErrorCriticalEvent.
         //
-        // Register note: both overloads have .locals 2, using v0 and v1.
-        // const/4 v0, 0x0 is safe — v0 is a local register in both methods.
+        // AVIA's ErrorCriticalEvent handler then checks nm0.c (built earlier
+        // by g1.c() from ek0.s = cbsaavideo.com URL) and falls back to
+        // direct playback from that URL — content without SSAI ads.
+        //
+        // Live TV is unaffected: it uses createLiveStreamRequest() which is
+        // a completely separate code path in pk0.run() at instruction [147].
+        //
+        // zzcx constructor requires one parameter: zzafv integration type.
+        // sget-object Lvk0;->K holds the factory but we use the static
+        // integration type directly via zzafv->zzd (VOD mode).
         // ------------------------------------------------------------------
         arrayOf(
             VodStreamRequest3ArgFingerprint,
@@ -69,18 +73,19 @@ val paramountPatch = bytecodePatch(
             fingerprint.method.addInstructions(
                 0,
                 """
-                    const/4 v0, 0x0
+                    new-instance v0, Lcom/google/ads/interactivemedia/v3/impl/zzcx;
+                    sget-object v1, Lcom/google/ads/interactivemedia/v3/internal/zzafv;->zzd Lcom/google/ads/interactivemedia/v3/internal/zzafv;
+                    invoke-direct {v0, v1}, Lcom/google/ads/interactivemedia/v3/impl/zzcx;-><init>(Lcom/google/ads/interactivemedia/v3/internal/zzafv;)V
                     return-object v0
                 """.trimIndent(),
             )
         }
 
         // ------------------------------------------------------------------
-        // Patch 3: Pause ads — CbsPauseWithAdsOverlay state machine
+        // Patch 2: Pause ads — CbsPauseWithAdsOverlay state machine
         //
-        // return-void at offset 0 prevents Glide image fetch, alpha fade-in,
-        // and overlay render event. Overlay stays at alpha=0 during pause.
-        // Independent of IMA DAI — unaffected by the VOD null-return patches.
+        // Independent of IMA DAI. return-void prevents Glide image fetch,
+        // alpha fade-in, and overlay render. Overlay stays at alpha=0.
         // ------------------------------------------------------------------
         PauseAdOverlayFingerprint.method.addInstructions(
             0,
