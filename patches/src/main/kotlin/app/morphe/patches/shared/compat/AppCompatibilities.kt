@@ -31,4 +31,12 @@ object AppCompatibilities {
     appIconColor = 0xFFFFFF,
     targets = listOf(AppTarget("7.2.0.41")),
     )
+
+    val MLB_TV = Compatibility(
+    name = "MLB.tv Android TV",
+    packageName = "com.bamnetworks.mobile.android.gameday.atbat",
+    appIconColor = 0x002D72,
+    targets = listOf(AppTarget("26.8.1.1"),
+        ),
+    )    
 }
