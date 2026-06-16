@@ -1,5 +1,5 @@
 {
-  "version": "1.4.71",
+  "version": "1.4.72",
   "appNames": {
     "com.fox.foxone": "Fox One Android TV",
     "com.foxsports.android": "Fox Sports Android TV",
@@ -7,6 +7,7 @@
     "com.amazon.amazonvideo.livingroom": "Prime Video Android TV",
     "com.tubitv": "Tubi Android TV",
     "com.univision.prendetv": "ViX Android TV",
+    "com.bamnetworks.mobile.android.gameday.atbat": "MLB.tv Android TV",
     "com.disney.disneyplus": "Disney+ Android TV",
     "com.wbd.hbomax": "HBO Max Android TV",
     "com.cbs.ott": "Paramount+ Android TV"
@@ -67,6 +68,32 @@
           "targets": [
             {
               "version": "7.2.0.41",
+              "experimental": false
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "MLB.tv Android TV",
+      "description": "Removes VOD ads, gambling promotions, and pause overlays while preserving live game playback.",
+      "use": true,
+      "dependencies": [],
+      "compatiblePackages": {
+        "com.bamnetworks.mobile.android.gameday.atbat": [
+          "26.8.1.1"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "MLB.tv Android TV",
+          "packageName": "com.bamnetworks.mobile.android.gameday.atbat",
+          "description": null,
+          "appIconColor": 11634,
+          "targets": [
+            {
+              "version": "26.8.1.1",
               "experimental": false
             }
           ]

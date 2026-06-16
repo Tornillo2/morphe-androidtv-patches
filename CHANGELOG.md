@@ -1,3 +1,11 @@
+## [1.4.72](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.71...v1.4.72) (2026-06-16)
+
+
+### Bug Fixes
+
+* push update for addition of MLB.tv to repo ([af7d735](https://github.com/ajstrick81/morphe-androidtv-patches/commit/af7d735729e017aeb2328c4eda836f1230b60847))
+* Rename patch from 'MLB At Bat' to 'MLB.tv' ([07af607](https://github.com/ajstrick81/morphe-androidtv-patches/commit/07af607dea512607de8210118b1af78d319c06c8))
+
 ## [1.4.71](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.70...v1.4.71) (2026-06-15)
 
 
