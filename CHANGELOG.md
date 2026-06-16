@@ -1,3 +1,11 @@
+## [1.4.73](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.72...v1.4.73) (2026-06-16)
+
+
+### Bug Fixes
+
+* Change compatibility from ATBAT_TV to MLB_TV ([6eb87fb](https://github.com/ajstrick81/morphe-androidtv-patches/commit/6eb87fb399625fc96ab9828a0ed5228e83ddea5f))
+* Modify AtBatPatch for MLB At Bat compatibility ([7638422](https://github.com/ajstrick81/morphe-androidtv-patches/commit/7638422dbbcedd9de3e4aea9b6925edf8a5afd83))
+
 ## [1.4.72](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.71...v1.4.72) (2026-06-16)
 
 
