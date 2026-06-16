@@ -79,7 +79,7 @@ val atbatPatch = bytecodePatch(
     name = "MLB At Bat Android TV",
     description = "Removes VOD ads, gambling promotions, and pause overlays while preserving live game playback.",
 ) {
-    compatibleWith(AppCompatibilities.ATBAT_TV)
+    compatibleWith(AppCompatibilities.MLB_TV)
 
     execute {
         // ------------------------------------------------------------------
