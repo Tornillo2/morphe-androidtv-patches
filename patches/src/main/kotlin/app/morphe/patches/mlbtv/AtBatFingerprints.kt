@@ -1,64 +1,55 @@
 /*
- * MLB At Bat Android TV — Ad Patch Fingerprints
+ * MLB At Bat Android TV — Ad Break Fingerprints
  *
  * Validated against:
  *   v26.8.1  (versionCode 1750000022) — com.bamnetworks.mobile.android.gameday
  *
- * AD SUPPRESSION MECHANISM (confirmed via APK analysis):
+ * BETWEEN-INNINGS AD BREAK MECHANISM (confirmed via logcat analysis):
  *
- *   At Bat uses the IDENTICAL Google IMA SDK v3 as Paramount+ v16.8.0.
+ *   At Bat uses a TWO-LAYER system for between-innings ads:
  *
- *   BEFORE DAI initialization, At Bat pre-builds the player media source
- *   (nm0.c) from the original content URI (ek0.s). This happens in a method
- *   equivalent to Paramount+ g1.c() for all stream types:
- *     - VOD with SSAI
- *     - Live TV (DAI)
- *     - Other resource types
+ *   Layer 1 — Publica (Programmatic Ad Auction):
+ *     GetPublicaBidsUseCase fetches ad bids from Publica's ad server.
+ *     PublicaBidListener.onAdBreakStarted() is called when a break begins,
+ *     triggering the ad auction and slot fill.
  *
- *   For VOD:      ek0.s = original CDN DASH manifest URL (non-null)
- *                 g1.c() → nm0.c = valid media source
- *                 DAI fails → AVIA uses nm0.c → content plays without ads
+ *   Layer 2 — LinearGoogleDaiListener (Pod Metadata + Segment Delivery):
+ *     Fetches DAI pod metadata from dai.google.com (ad break timing/segments).
+ *     Ad video segments are then fetched from googlevideo.com as MPEG-TS
+ *     with source=dclk_video_ads (DoubleClick Video Ads).
  *
- *   For live TV:  ek0.s = null (no pre-DAI content URL exists)
- *                 g1.c() → nm0.c = null
- *                 DAI fails → nm0.c = null → black screen (so live TV needs DAI)
+ *   Confirmed via logcat:
+ *     "[MlbMediaPlayer] onAdBreakStarted"
+ *     "[LinearGoogleDaiListener] Starting pod metadata timer"
+ *     googlevideo.com/.../source/dclk_video_ads (responseCode: 200)
+ *     pubads.g.doubleclick.net/adsid/integrator.json (ad auction call)
  *
- *   Therefore: causing DAI to fail gracefully suppresses VOD SSAI ads while
- *   live TV naturally requires DAI to succeed (no fallback URL). This is a
- *   built-in safety mechanism — we don't need to explicitly guard live TV.
+ *   The ad video segments come from rotating CDN subdomains:
+ *     r2---sn-uhvcpax0n5-vgqz.googlevideo.com
+ *     r3---sn-uhvcpax0n5-vgqz.googlevideo.com
+ *     r4---sn-vgqsknez.googlevideo.com
+ *   All with source=dclk_video_ads — same CDN as live game content,
+ *   making domain-level blocking impossible without killing the stream.
  *
  * STRATEGY:
- *   Return an empty (but non-null) zzcx StreamRequest from createVodStreamRequest().
- *   This triggers:
- *     1. Passes the null-check in CreateAdSessionUseCase
- *     2. requestStream(emptyZzcx) is called
- *     3. IMA SDK throws (no content source or video ID set)
- *     4. Exception caught by try-catch in CreateAdSessionUseCase
- *     5. ErrorCriticalEvent → AVIA error handler
- *     6. Error handler detects nm0.c is valid → falls back
- *     7. Content plays from ek0.s (original CDN URL)
- *     8. ✅ VOD plays without ads or gambling content
+ *   Intercept at the HIGHEST level — PublicaBidListener.onAdBreakStarted().
+ *   This fires when the player signals a commercial break is starting.
+ *   return-void here prevents:
+ *     - Publica ad auction from running
+ *     - DAI pod metadata from being fetched
+ *     - googlevideo.com ad segments from being requested
+ *     - BetMGM, Bet365, and other gambling ads from rendering
  *
- *   Gambling promotions (FanDuel, DraftKings, BetMGM) are all delivered through
- *   the IMA SDK overlay infrastructure. They're suppressed as a side effect of
- *   the IMA SDK exception.
+ *   The "Commercial Break - We'll be right back" placeholder is expected
+ *   to display instead (as it did with older DNS blocking on previous versions).
  *
- *   Live games use createLiveStreamRequest() — completely separate code path —
- *   unaffected by these fingerprints.
+ * PATCH POINTS:
+ *   Primary:   PublicaBidListener.onAdBreakStarted()  ← Highest-level intercept
+ *   Secondary: GetPublicaBidsUseCase (execute/invoke)  ← Kills upstream bid request
  *
- * NOTE: Previously on Paramount+, active AdStartedFingerprint and AdSkipFingerprint
- *   patches corrupted player state and blocked the nm0.c fallback. This build
- *   contains ONLY the createVodStreamRequest patch + pause overlay. The VOD
- *   ad suppression via fallback is the primary mechanism; mid-roll skipping is
- *   a secondary concern that requires careful isolation (confirmed on Paramount+
- *   v16.8.0 that mid-rolls don't require explicit patches once fallback works).
- *
- * isLive check location in CreateAdSessionUseCase (expected pattern):
- *   Conditional check for stream type (VOD vs LIVE)
- *   [if VOD] → calls createVodStreamRequest()
- *   [if LIVE] → calls createLiveStreamRequest()
- *
- *   Only the VOD path is patched.
+ * CLASSES (unobfuscated — confirmed in classes6.dex):
+ *   mlb.atbat.media.player.listener.publica.PublicaBidListener
+ *   mlb.atbat.data.usecase.GetPublicaBidsUseCase
  */
 
 package app.morphe.patches.atbat
@@ -66,83 +57,64 @@ package app.morphe.patches.atbat
 import app.morphe.patcher.Fingerprint
 
 // ---------------------------------------------------------------------------
-// Patch 1a: VOD SSAI & Gambling Ads — createVodStreamRequest (3-arg)
+// Patch 3: Between-Innings Ad Break Suppression — PublicaBidListener
 //
-// Called by CreateAdSessionUseCase for standard VOD content.
-// Returns a valid but empty zzcx object — no contentSourceId (zze),
-// no videoId (zzf), no apiKey (zzo) set. requestStream(emptyZzcx) throws
-// inside the IMA SDK, caught by CreateAdSessionUseCase try-catch, triggers
-// the ErrorCriticalEvent → At Bat falls back to nm0.c (original CDN URL).
+// PublicaBidListener.onAdBreakStarted() is the primary entry point for
+// between-innings commercial breaks. When the DAI stream signals a break,
+// this method fires and triggers the full Publica ad auction + segment fetch.
 //
-// Fully unobfuscated (IMA SDK public API). Parameters: 3 Strings.
+// return-void prevents:
+//   - Publica bid request (GetPublicaBidsUseCase)
+//   - DAI pod metadata fetch (LinearGoogleDaiListener.fetchPodMetadata)
+//   - googlevideo.com MPEG-TS ad segment requests (source=dclk_video_ads)
+//   - BetMGM, Bet365, FanDuel gambling ad rendering
 //
-// SIGNATURE:
-//   ImaSdkFactory.createVodStreamRequest(
-//     contentSourceId: String,
-//     videoId: String,
-//     apiKey: String
-//   ) -> StreamRequest
+// Anchored on unobfuscated log strings from classes6.dex.
+// The companion lambda classes confirm the method structure:
+//   PublicaBidListener$onAdBreakStarted$1
+//   PublicaBidListener$onAdBreakFinished$1
+//
+// EXPECTED RESULT:
+//   Between-innings break shows "Commercial Break - We'll be right back"
+//   placeholder (same as old DNS blocking behavior on previous versions).
+//   Game playback resumes normally after the break duration.
 // ---------------------------------------------------------------------------
 
-internal object VodStreamRequest3ArgFingerprint : Fingerprint(
-    returnType = "Lcom/google/ads/interactivemedia/v3/api/StreamRequest;",
-    custom = { method, _ ->
-        method.name == "createVodStreamRequest" &&
-            method.definingClass ==
-                "Lcom/google/ads/interactivemedia/v3/api/ImaSdkFactory;" &&
-            method.parameterTypes.size == 3 &&
-            method.parameterTypes.all { it == "Ljava/lang/String;" }
-    },
-)
-
-// ---------------------------------------------------------------------------
-// Patch 1b: VOD SSAI & Gambling Ads — createVodStreamRequest (4-arg)
-//
-// Called by CreateAdSessionUseCase for VOD content with networkCode parameter.
-// Same strategy as 3-arg — empty zzcx, triggers IMA SDK exception, fallback.
-//
-// SIGNATURE:
-//   ImaSdkFactory.createVodStreamRequest(
-//     contentSourceId: String,
-//     videoId: String,
-//     apiKey: String,
-//     networkCode: String
-//   ) -> StreamRequest
-// ---------------------------------------------------------------------------
-
-internal object VodStreamRequest4ArgFingerprint : Fingerprint(
-    returnType = "Lcom/google/ads/interactivemedia/v3/api/StreamRequest;",
-    custom = { method, _ ->
-        method.name == "createVodStreamRequest" &&
-            method.definingClass ==
-                "Lcom/google/ads/interactivemedia/v3/api/ImaSdkFactory;" &&
-            method.parameterTypes.size == 4 &&
-            method.parameterTypes.all { it == "Ljava/lang/String;" }
-    },
-)
-
-// ---------------------------------------------------------------------------
-// Patch 2: Pause Ad Overlay Suppression — DISABLED (Fingerprint not matched)
-//
-// The pause ad display method fingerprint did not match in At Bat v26.8.1.
-// This fingerprint has been disabled. If pause ads appear during testing,
-// decompile At Bat smali and search for:
-//   - "displayPauseAd", "renderPauseAd", "showPauseAd"
-//   - Methods in classes ending with "PauseAd", "AdOverlay", "PauseOverlay"
-//
-// Then create a new fingerprint with the correct method signatures.
-// For now, the primary goal (VOD SSAI suppression) is achieved.
-//
-// COMMENTED OUT:
-/*
-internal object PauseAdDisplayFingerprint : Fingerprint(
+internal object PublicaAdBreakStartedFingerprint : Fingerprint(
     returnType = "V",
-    strings = listOf("displayPauseAd", "pauseAdId"),
+    strings = listOf("[MlbMediaPlayer] onAdBreakStarted"),
     custom = { method, _ ->
-        // Matches methods in IMA SDK pause ad rendering
-        method.definingClass.contains("PauseAd") ||
-            method.name.contains("displayPauseAd") ||
-            method.name.contains("renderPauseAd")
+        method.definingClass.endsWith("PublicaBidListener;") &&
+            method.name == "onAdBreakStarted"
     },
 )
-*/
+
+// ---------------------------------------------------------------------------
+// Patch 4: Publica Bid Request Suppression — GetPublicaBidsUseCase
+//
+// GetPublicaBidsUseCase fetches ad bids from Publica's auction server.
+// This is the upstream source of all between-innings ad decisions.
+// Killing this use case prevents any ad bid from being placed, which
+// means no ad creative is selected for playback.
+//
+// Anchored on error strings from classes6.dex:
+//   "Failed to get Publica ads with response code: "
+//   "Failed to get Publica ads due to an exception: "
+//   "Publica bids count: "
+//
+// This is a SECONDARY patch — PublicaAdBreakStartedFingerprint is the
+// primary intercept. This adds depth-of-defense: even if onAdBreakStarted
+// somehow fires, there are no bids to fulfill.
+//
+// NOTE: If this fingerprint causes issues (e.g. the method is a suspend
+// function with a Continuation parameter), disable it and rely solely on
+// PublicaAdBreakStartedFingerprint.
+// ---------------------------------------------------------------------------
+
+internal object GetPublicaBidsFingerprint : Fingerprint(
+    returnType = "V",
+    strings = listOf("Publica bids count: ", "Failed to get Publica ads"),
+    custom = { method, _ ->
+        method.definingClass.endsWith("GetPublicaBidsUseCase;")
+    },
+)
