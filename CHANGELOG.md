@@ -1,3 +1,10 @@
+## [1.4.75](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.74...v1.4.75) (2026-06-16)
+
+
+### Bug Fixes
+
+* Refactor Fingerprints.kt for ad event suppression ([eec1fd6](https://github.com/ajstrick81/morphe-androidtv-patches/commit/eec1fd6082f207602ce496818d70bd24aceb4809))
+
 ## [1.4.74](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.73...v1.4.74) (2026-06-16)
 
 
