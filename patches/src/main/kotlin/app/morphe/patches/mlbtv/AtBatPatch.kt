@@ -5,67 +5,59 @@
  *   v26.8.1  (versionCode 1750000022) — com.bamnetworks.mobile.android.gameday
  *
  * Coverage:
- *   ✅ VOD ads         — createVodStreamRequest() returns empty zzcx →
- *                        IMA SDK throws → CreateAdSessionUseCase fallback
- *                        → content plays from pre-cached CDN URL without SSAI ads
+ *   ✅ VOD ads              — createVodStreamRequest() returns empty zzcx →
+ *                             IMA SDK throws → CreateAdSessionUseCase fallback
+ *                             → content plays from pre-cached CDN URL without ads
  *
- *   ✅ Gambling ads    — FanDuel, DraftKings, BetMGM promotions suppressed
- *                        (delivered through IMA SDK overlay infrastructure)
+ *   ✅ Gambling ads (VOD)   — FanDuel, DraftKings, BetMGM suppressed via
+ *                             IMA SDK exception (same path as VOD ads)
  *
- *   ✅ Pause overlays  — Ad overlay rendering blocked (GMS ads infrastructure)
+ *   ✅ Between-innings ads  — PublicaBidListener.onAdBreakStarted() blocked →
+ *                             Publica auction cancelled → DAI pod metadata not
+ *                             fetched → googlevideo.com dclk_video_ads segments
+ *                             not requested → BetMGM/Bet365 ads don't play
  *
- *   ➡️ Live games      — DAI untouched (live games use createLiveStreamRequest
- *                        which is a completely separate code path with no fallback)
+ *   ✅ Publica bid upstream — GetPublicaBidsUseCase blocked → no ad bid placed
+ *                             (depth-of-defense for between-innings ads)
  *
- * STRATEGY:
- *   At Bat uses the IDENTICAL IMA SDK v3 as Paramount+ v16.8.0, with the same
- *   public API methods (ImaSdkFactory.createVodStreamRequest). The fallback
- *   mechanism confirmed by error messages:
- *     "[CreateAdSessionUseCase] Dai stream url was null or empty for session"
+ *   ➡️ Live games           — DAI untouched (live games use createLiveStreamRequest
+ *                             which is a completely separate code path with no fallback)
  *
- *   By returning an empty (but non-null) zzcx object, we trigger the same
- *   exception → fallback chain:
+ * AD BREAK ARCHITECTURE (confirmed via logcat + DEX analysis):
  *
- *     createVodStreamRequest() → empty zzcx (passes null guard)
+ *   Between-innings ads flow:
+ *     DAI manifest signals commercial break
  *     ↓
- *     CreateAdSessionUseCase.requestStream(empty_zzcx)
+ *     MlbMediaPlayer.onAdBreakStarted() fires
  *     ↓
- *     IMA SDK throws (missing contentSourceId, videoId, etc.)
+ *     PublicaBidListener.onAdBreakStarted() called
  *     ↓
- *     try-catch catches exception
+ *     GetPublicaBidsUseCase fetches Publica auction (pubads.g.doubleclick.net)
  *     ↓
- *     ErrorCriticalEvent dispatched
+ *     LinearGoogleDaiListener.fetchPodMetadata() called (dai.google.com/metadata)
  *     ↓
- *     AVIA error handler checks nm0.c (pre-cached URI built before DAI init)
- *     ↓ (for VOD, this is non-null)
- *     Falls back to direct playback from original CDN URL
- *     ↓ ✅ VOD content plays WITHOUT SSAI ads or gambling promotions
+ *     Ad video segments fetched from googlevideo.com (source=dclk_video_ads)
+ *     ↓
+ *     BetMGM / Bet365 / gambling ads play during commercial break
+ *
+ *   Our intercept:
+ *     PublicaBidListener.onAdBreakStarted() → return-void
+ *     ↓ (entire chain above is cancelled)
+ *     "Commercial Break - We'll be right back" placeholder shown instead
+ *     ↓ ✅ No gambling ads during innings breaks
+ *
+ * VOD STRATEGY (unchanged from v1):
+ *   createVodStreamRequest() returns empty (non-null) zzcx StreamRequest.
+ *   IMA SDK throws → exception caught → fallback to pre-cached CDN URL.
+ *   Live games use createLiveStreamRequest() — separate path, untouched.
  *
  * zzcx CONSTRUCTOR:
- *   Same as Paramount+. zzcx is constructed as:
+ *   Same as Paramount+ v16.8.0:
  *     new-instance v0, Lcom/google/ads/interactivemedia/v3/impl/zzcx;
  *     sget-object v1, zzafv;->zzd (VOD integration type)
  *     invoke-direct v0, v1, zzcx;-><init>(zzafv)V
- *   We replicate this without calling any setter methods (zze/zzf/zzo/etc).
- *   The object is valid but has zero content parameters set.
- *
+ *   No setter methods called — object is valid but has zero content params.
  *   Register note: .registers 5 for 3-arg (p0=this, p1..p3=strings).
- *   v0 = new zzcx, v1 = integration type constant. Safe to use both.
- *
- * GAMBLING CONTENT SUPPRESSION:
- *   All sportsbook promotions (FanDuel, DraftKings, BetMGM) are delivered
- *   through the IMA SDK overlay infrastructure. By triggering IMA SDK exception
- *   at the StreamRequest stage, we prevent:
- *     - Pre-roll sportsbook promotions
- *     - Mid-roll betting guides and odds overlays
- *     - Post-roll "download our app" call-to-action
- *     - Pause-time promotional overlays (via GMS ads infrastructure)
- *
- * LIVE TV SAFETY:
- *   Live games use createLiveStreamRequest(), which is a completely separate
- *   code path in CreateAdSessionUseCase that is NOT patched. Live TV playback
- *   requires DAI to succeed (unlike VOD, which has the fallback URL). This
- *   approach naturally preserves live game functionality.
  */
 
 package app.morphe.patches.atbat
@@ -77,7 +69,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 @Suppress("unused")
 val atbatPatch = bytecodePatch(
     name = "MLB At Bat Android TV",
-    description = "Removes VOD ads, gambling promotions, and pause overlays while preserving live game playback.",
+    description = "Removes VOD ads, between-innings gambling ads, and sportsbook promotions while preserving live game playback.",
 ) {
     compatibleWith(AppCompatibilities.MLB_TV)
 
@@ -97,12 +89,8 @@ val atbatPatch = bytecodePatch(
         // gambling promotions.
         //
         // Live games are unaffected: they use createLiveStreamRequest() which
-        // is a completely separate code path at a different location in
-        // CreateAdSessionUseCase. Live TV has no ek0.s (CDN URL) fallback,
-        // so it still needs DAI to succeed.
-        //
-        // zzcx constructor requires one parameter: zzafv integration type.
-        // We use the static VOD mode constant via zzafv->zzd.
+        // is a completely separate code path. Live TV has no ek0.s (CDN URL)
+        // fallback, so it still needs DAI to succeed.
         // ------------------------------------------------------------------
         arrayOf(
             VodStreamRequest3ArgFingerprint,
@@ -120,31 +108,52 @@ val atbatPatch = bytecodePatch(
         }
 
         // ------------------------------------------------------------------
-        // Patch 2: Pause Ad Overlay Suppression (IMA SDK pause ads) — DISABLED
+        // Patch 3: Between-Innings Ad Break — PublicaBidListener
         //
-        // The pause ad display method fingerprint did not match in At Bat.
-        // This suggests either:
-        //   1. Pause ads don't occur in At Bat (no overlay rendering)
-        //   2. The method uses different naming/structure than expected
-        //   3. Pause ads are handled through a different infrastructure
+        // PublicaBidListener.onAdBreakStarted() is the top-level entry point
+        // for all between-innings commercial breaks. return-void here cancels
+        // the entire Publica auction + DAI pod metadata fetch + googlevideo.com
+        // MPEG-TS segment requests (source=dclk_video_ads).
         //
-        // Since the primary goal (VOD SSAI suppression + gambling content)
-        // is achieved via the createVodStreamRequest patches above, and
-        // pause overlays are not critical, we disable this patch.
+        // Confirmed ad flow from logcat:
+        //   "[MlbMediaPlayer] onAdBreakStarted"
+        //   "[LinearGoogleDaiListener] Starting pod metadata timer"
+        //   googlevideo.com/.../source/dclk_video_ads (responseCode: 200)
         //
-        // If pause ads appear during testing, we can revisit by:
-        //   1. Decompiling At Bat smali
-        //   2. Searching for "displayPauseAd", "renderPauseAd", or overlay rendering
-        //   3. Creating a new fingerprint with correct method signatures
+        // Expected result: "Commercial Break - We'll be right back" placeholder
+        // shows instead of BetMGM/Bet365 gambling ads. Game resumes normally.
         //
-        // For now, VOD ads and gambling content are successfully suppressed.
+        // Class confirmed unobfuscated in classes6.dex:
+        //   mlb.atbat.media.player.listener.publica.PublicaBidListener
         // ------------------------------------------------------------------
-        
-        // PauseAdDisplayFingerprint.method.addInstructions(
-        //     0,
-        //     """
-        //         return-void
-        //     """.trimIndent(),
-        // )
+        PublicaAdBreakStartedFingerprint.method.addInstructions(
+            0,
+            """
+                return-void
+            """.trimIndent(),
+        )
+
+        // ------------------------------------------------------------------
+        // Patch 4: Publica Bid Request Upstream — GetPublicaBidsUseCase
+        //
+        // Kills the Publica ad auction request upstream of the ad break.
+        // Even if onAdBreakStarted somehow fires, no bid is placed so no
+        // ad creative is selected.
+        //
+        // Depth-of-defense for between-innings ad suppression.
+        //
+        // NOTE: GetPublicaBidsUseCase may be a Kotlin suspend function with
+        // a Continuation parameter. If this patch causes a compile error,
+        // comment it out — Patch 3 alone is sufficient.
+        //
+        // Class confirmed unobfuscated in classes6.dex:
+        //   mlb.atbat.data.usecase.GetPublicaBidsUseCase
+        // ------------------------------------------------------------------
+        GetPublicaBidsFingerprint.method.addInstructions(
+            0,
+            """
+                return-void
+            """.trimIndent(),
+        )
     }
 }
