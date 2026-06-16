@@ -76,10 +76,10 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 
 @Suppress("unused")
 val atbatPatch = bytecodePatch(
-    name = "MLB.tv Android TV",
+    name = "MLB At Bat Android TV",
     description = "Removes VOD ads, gambling promotions, and pause overlays while preserving live game playback.",
 ) {
-    compatibleWith(AppCompatibilities.MLB_TV)
+    compatibleWith(AppCompatibilities.ATBAT_TV)
 
     execute {
         // ------------------------------------------------------------------
@@ -120,22 +120,31 @@ val atbatPatch = bytecodePatch(
         }
 
         // ------------------------------------------------------------------
-        // Patch 2: Pause Ad Overlay Suppression (IMA SDK pause ads)
+        // Patch 2: Pause Ad Overlay Suppression (IMA SDK pause ads) — DISABLED
         //
-        // GMS ads infrastructure provides the AdOverlay rendering for pause
-        // ads. By returning early from the display method, we prevent the
-        // pause ad overlay from becoming visible. Audio pause still works
-        // (separate handler in media player).
+        // The pause ad display method fingerprint did not match in At Bat.
+        // This suggests either:
+        //   1. Pause ads don't occur in At Bat (no overlay rendering)
+        //   2. The method uses different naming/structure than expected
+        //   3. Pause ads are handled through a different infrastructure
         //
-        // This patch may be optional depending on whether pause ads appear
-        // in At Bat. If pause ads don't occur, this patch does nothing.
-        // If they do appear, this blocks them cleanly.
+        // Since the primary goal (VOD SSAI suppression + gambling content)
+        // is achieved via the createVodStreamRequest patches above, and
+        // pause overlays are not critical, we disable this patch.
+        //
+        // If pause ads appear during testing, we can revisit by:
+        //   1. Decompiling At Bat smali
+        //   2. Searching for "displayPauseAd", "renderPauseAd", or overlay rendering
+        //   3. Creating a new fingerprint with correct method signatures
+        //
+        // For now, VOD ads and gambling content are successfully suppressed.
         // ------------------------------------------------------------------
-        PauseAdDisplayFingerprint.method.addInstructions(
-            0,
-            """
-                return-void
-            """.trimIndent(),
-        )
+        
+        // PauseAdDisplayFingerprint.method.addInstructions(
+        //     0,
+        //     """
+        //         return-void
+        //     """.trimIndent(),
+        // )
     }
 }
