@@ -8,10 +8,16 @@
  *   ✅ VOD ads              — createVodStreamRequest() returns empty zzcx →
  *                             IMA SDK throws → fallback to pre-cached CDN URL
  *   ✅ Gambling ads (VOD)   — FanDuel, DraftKings, BetMGM via IMA SDK path
- *   ✅ Between-innings ads  — PublicaBidListener.onAdBreakStarted() blocked →
- *                             Publica auction cancelled → dclk_video_ads not fetched
- *   ✅ Publica bid upstream — GetPublicaBidsUseCase blocked (depth-of-defense)
- *   ➡️ Live games           — DAI untouched (createLiveStreamRequest, no fallback)
+ *   ✅ Between-innings ads  — PublicaBidListener.onAdBreakStarted() blocked +
+ *                             CreateMediaItemWithAdsUseCase blocked upstream
+ *   ➡️ Live games           — DAI untouched (createLiveStreamRequest path)
+ *
+ * SUSPEND FUNCTION STRATEGY:
+ *   onAdBreakStarted and CreateMediaItemWithAdsUseCase are Kotlin coroutines.
+ *   They compile to methods returning Ljava/lang/Object; with a Continuation
+ *   parameter. return-void is invalid here — instead we return const/4 0x0
+ *   (null Object), which causes the coroutine to complete with null result,
+ *   effectively suppressing the ad break without crashing.
  */
 
 package app.morphe.patches.mlbtv
@@ -31,9 +37,8 @@ val atbatPatch = bytecodePatch(
         // ------------------------------------------------------------------
         // Patch 1: VOD SSAI & Gambling Content — createVodStreamRequest
         //
-        // Returns a valid but empty zzcx StreamRequest. IMA SDK throws when
-        // requestStream() is called with no parameters → exception caught →
-        // ErrorCriticalEvent → fallback to pre-cached CDN URL (nm0.c).
+        // Returns a valid but empty zzcx StreamRequest → IMA SDK throws →
+        // exception caught → fallback to pre-cached CDN URL (nm0.c).
         // Live games use createLiveStreamRequest() — separate path, untouched.
         // ------------------------------------------------------------------
         VodStreamRequest3ArgFingerprint.method.addInstructions(
@@ -59,36 +64,40 @@ val atbatPatch = bytecodePatch(
         // ------------------------------------------------------------------
         // Patch 3: Between-Innings Ad Break — PublicaBidListener
         //
-        // Highest-level intercept for commercial breaks. Fires when DAI stream
-        // signals a break. return-void cancels the entire chain:
-        //   Publica auction → DAI pod metadata → googlevideo.com dclk_video_ads
+        // onAdBreakStarted is a Kotlin suspend function (returns Object).
+        // return-object v0 with const/4 v0, 0x0 returns null, completing
+        // the coroutine without executing the ad break body.
         //
-        // Confirmed via logcat:
-        //   "[MlbMediaPlayer] onAdBreakStarted"
-        //   googlevideo.com/.../source/dclk_video_ads (responseCode: 200)
+        // Cancels: Publica auction → DAI pod metadata → dclk_video_ads
+        // Expected: "Commercial Break - We'll be right back" instead of ads.
         //
-        // Expected: "Commercial Break - We'll be right back" shown instead of
-        // BetMGM / Bet365 gambling ads.
+        // If this fingerprint doesn't match (method signature differs),
+        // comment it out — Patch 4 handles the upstream intercept.
         // ------------------------------------------------------------------
         PublicaAdBreakStartedFingerprint.method.addInstructions(
             0,
             """
-                return-void
+                const/4 v0, 0x0
+                return-object v0
             """.trimIndent(),
         )
 
         // ------------------------------------------------------------------
-        // Patch 4: Publica Bid Upstream — GetPublicaBidsUseCase
+        // Patch 4: DAI/IMA Stream Init — CreateMediaItemWithAdsUseCase
         //
-        // Depth-of-defense. Kills ad bid request before break even triggers.
-        // NOTE: If this is a Kotlin suspend function the fingerprint won't
-        // match — that is safe, Patch 3 handles the primary intercept.
-        // If this causes a compile error, comment out these two lines only.
+        // Controls both DAI API and IMA SDK ad stream initialization paths.
+        // Sits upstream of between-innings ad segment requests.
+        //
+        // Also a suspend function — return null Object to suppress.
+        //
+        // NOTE: If this patch causes live game issues, comment it out.
+        // The VOD patches (1a/1b) are independent and safe to keep.
         // ------------------------------------------------------------------
-        GetPublicaBidsFingerprint.method.addInstructions(
+        CreateMediaItemWithAdsFingerprint.method.addInstructions(
             0,
             """
-                return-void
+                const/4 v0, 0x0
+                return-object v0
             """.trimIndent(),
         )
     }
