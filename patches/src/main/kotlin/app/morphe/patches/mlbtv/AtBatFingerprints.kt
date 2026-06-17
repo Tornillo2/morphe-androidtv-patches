@@ -4,26 +4,32 @@
  * Validated against:
  *   v26.8.1  (versionCode 1750000022) — com.bamnetworks.mobile.android.gameday
  *
- * PATCH COVERAGE:
+ * ALL FINGERPRINTS VERIFIED via full APK bytecode analysis.
+ * Exact class names, method names, return types, and string refs confirmed.
  *
- *   Patch 1a/1b — VOD SSAI & Gambling Ads (createVodStreamRequest)
- *     Identical IMA SDK v3 as Paramount+ v16.8.0.
- *     Empty zzcx → IMA SDK throws → fallback to pre-cached CDN URL.
+ * BETWEEN-INNINGS AD ARCHITECTURE (confirmed):
  *
- *   Patch 3 — DAI/IMA Stream Init (CreateMediaItemWithAdsUseCase)
- *     Confirmed in classes6.dex — unobfuscated class name, stable log strings:
- *       "[CreateMediaItemWithAdsUseCase] Playing stream with DAI API"
- *       "[CreateMediaItemWithAdsUseCase] Playing stream with IMA SDK"
- *     Sits upstream of both between-innings ad breaks AND VOD SSAI.
- *     Kotlin suspend function → returnType = "Ljava/lang/Object;"
- *     Return null Object to complete coroutine without executing body.
+ *   Lv70/k;.b(Lo60/c$c; Lo60/c; Z)V
+ *     → logs "[MlbMediaPlayer] onAdBreakStarted"
+ *     → return type V (NOT a suspend function)
+ *     → also references "adMetadata", "podMetadata", "breakStarted"
+ *     → PRIMARY patch point: return-void here cancels the entire break
  *
- * REMOVED:
- *   PublicaAdBreakStartedFingerprint — log string "[MlbMediaPlayer] onAdBreakStarted"
- *   is not in the PublicaBidListener.onAdBreakStarted method body directly.
- *   It lives in a different class (MlbMediaPlayer or MlbPlayerComponent).
- *   Dropped in favour of CreateMediaItemWithAdsUseCase which is a cleaner
- *   upstream intercept confirmed by its own log strings.
+ *   Lv70/a;.c(StreamElement; Lb80/s; Lu70/u; Lg10/c;)Object  [suspend]
+ *     → logs "[CreateMediaItemWithAdsUseCase] Playing stream with DAI API"
+ *     → DAI path initialization
+ *
+ *   Lv70/a;.d(StreamElement; Lu70/u; Lb80/s; Lj60/j; Lg10/c;)Object  [suspend]
+ *     → logs "[CreateMediaItemWithAdsUseCase] Playing stream with IMA SDK"
+ *     → IMA SDK path initialization
+ *
+ *   Lu50/g3;.a(StreamElement; I; Lg10/c;)Object  [suspend]
+ *     → logs "Publica bids count: "
+ *     → Publica ad auction
+ *
+ *   Lz70/i;.z()V
+ *     → logs "[LinearGoogleDaiListener] Starting pod metadata timer"
+ *     → DAI pod metadata fetch (googlevideo.com ad segments)
  */
 
 package app.morphe.patches.mlbtv
@@ -32,6 +38,7 @@ import app.morphe.patcher.Fingerprint
 
 // ---------------------------------------------------------------------------
 // Patch 1a: VOD SSAI & Gambling Ads — createVodStreamRequest (3-arg)
+// Unobfuscated IMA SDK public API — confirmed present in APK.
 // ---------------------------------------------------------------------------
 
 internal object VodStreamRequest3ArgFingerprint : Fingerprint(
@@ -61,30 +68,42 @@ internal object VodStreamRequest4ArgFingerprint : Fingerprint(
 )
 
 // ---------------------------------------------------------------------------
-// Patch 3: DAI/IMA Stream Init — CreateMediaItemWithAdsUseCase
+// Patch 3: Between-Innings Ad Break Entry Point
 //
-// Controls both DAI API and IMA SDK ad stream initialization paths for
-// between-innings commercial breaks. Confirmed unobfuscated in classes6.dex:
-//   mlb.atbat.media.player.ads.CreateMediaItemWithAdsUseCase
+// VERIFIED: Class Lv70/k; method b(Lo60/c$c; Lo60/c; Z)V
+// Return type: V (plain method, NOT a suspend function)
+// Unique strings in bytecode: "[MlbMediaPlayer] onAdBreakStarted",
+//   "adMetadata", "podMetadata", "breakStarted", "PlayerAdEventListener"
 //
-// Log strings confirmed in DEX:
-//   "[CreateMediaItemWithAdsUseCase] Playing stream with DAI API"
-//   "[CreateMediaItemWithAdsUseCase] Playing stream with IMA SDK"
-//
-// Kotlin suspend function → returnType = "Ljava/lang/Object;"
-// Return null Object to complete coroutine without executing ad init body.
-//
-// NOTE: If this causes live game issues, it can be disabled — the VOD
-// patches (1a/1b) are independent and do not depend on this fingerprint.
+// return-void here cancels the entire between-innings ad break chain.
 // ---------------------------------------------------------------------------
 
-internal object CreateMediaItemWithAdsFingerprint : Fingerprint(
-    returnType = "Ljava/lang/Object;",
+internal object AdBreakStartedFingerprint : Fingerprint(
+    returnType = "V",
     strings = listOf(
-        "[CreateMediaItemWithAdsUseCase] Playing stream with DAI API",
-        "[CreateMediaItemWithAdsUseCase] Playing stream with IMA SDK",
+        "[MlbMediaPlayer] onAdBreakStarted",
+        "adMetadata",
+        "podMetadata",
     ),
     custom = { method, _ ->
-        method.definingClass.endsWith("CreateMediaItemWithAdsUseCase;")
+        method.parameterTypes.size == 3 &&
+            method.parameterTypes[2] == "Z"
+    },
+)
+
+// ---------------------------------------------------------------------------
+// Patch 4: DAI Pod Metadata Timer — LinearGoogleDaiListener
+//
+// VERIFIED: Class Lz70/i; method z()V
+// Return type: V, no parameters, single string ref in body.
+// Killing this prevents googlevideo.com dclk_video_ads segment requests.
+// Depth-of-defense below Patch 3.
+// ---------------------------------------------------------------------------
+
+internal object LinearDaiPodMetadataFingerprint : Fingerprint(
+    returnType = "V",
+    strings = listOf("[LinearGoogleDaiListener] Starting pod metadata timer"),
+    custom = { method, _ ->
+        method.parameterTypes.isEmpty()
     },
 )
