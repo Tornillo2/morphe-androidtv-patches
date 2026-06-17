@@ -1,3 +1,10 @@
+## [1.4.77](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.76...v1.4.77) (2026-06-17)
+
+
+### Bug Fixes
+
+* Update patch notes and adjust return types for suspend functions ([c8eb1f5](https://github.com/ajstrick81/morphe-androidtv-patches/commit/c8eb1f5cfc5ce86c0669671b3e7aeb78c6b1e17b))
+
 ## [1.4.76](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.75...v1.4.76) (2026-06-17)
 
 

@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-06-17T00:10:24",
-  "description": "## [1.4.76](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.75...v1.4.76) (2026-06-17)\n\n\n### Bug Fixes\n\n* push new version with Update ad patch fingerprints for MLB At Bat ([1aac811](https://github.com/ajstrick81/morphe-androidtv-patches/commit/1aac8110d104ea6ef5dfbf56179efe2189b568be))\n* Refactor AtBatPatch for clarity and structure ([fbcd024](https://github.com/ajstrick81/morphe-androidtv-patches/commit/fbcd024b288acb7343fdf5b4ee499f9d6b42db22))",
-  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.76/patches-1.4.76.mpp",
+  "created_at": "2026-06-17T00:20:09",
+  "description": "## [1.4.77](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.76...v1.4.77) (2026-06-17)\n\n\n### Bug Fixes\n\n* Update patch notes and adjust return types for suspend functions ([c8eb1f5](https://github.com/ajstrick81/morphe-androidtv-patches/commit/c8eb1f5cfc5ce86c0669671b3e7aeb78c6b1e17b))",
+  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.77/patches-1.4.77.mpp",
   "signature_download_url": "",
-  "version": "1.4.76"
+  "version": "1.4.77"
 }
