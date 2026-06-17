@@ -1,3 +1,11 @@
+## [1.4.80](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.79...v1.4.80) (2026-06-17)
+
+
+### Bug Fixes
+
+* Refactor MLB At Bat ad patches for clarity and functionality ([42f0d5a](https://github.com/ajstrick81/morphe-androidtv-patches/commit/42f0d5a67c56ab8b7f9cf3f51a75bfd9257d6c93))
+* Refactor MLB At Bat ad suppression patches ([0532f64](https://github.com/ajstrick81/morphe-androidtv-patches/commit/0532f6487570ef419f180f5043f8cc82c412497b))
+
 ## [1.4.79](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.78...v1.4.79) (2026-06-17)
 
 

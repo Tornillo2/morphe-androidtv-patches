@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-06-17T01:40:16",
-  "description": "## [1.4.79](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.78...v1.4.79) (2026-06-17)\n\n\n### Bug Fixes\n\n* Refactor comments and patch descriptions in AtBatPatch ([aafcfe5](https://github.com/ajstrick81/morphe-androidtv-patches/commit/aafcfe5b8514d0408bf2dc7b01e85cf697db2a78))",
-  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.79/patches-1.4.79.mpp",
+  "created_at": "2026-06-17T02:08:55",
+  "description": "## [1.4.80](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.79...v1.4.80) (2026-06-17)\n\n\n### Bug Fixes\n\n* Refactor MLB At Bat ad patches for clarity and functionality ([42f0d5a](https://github.com/ajstrick81/morphe-androidtv-patches/commit/42f0d5a67c56ab8b7f9cf3f51a75bfd9257d6c93))\n* Refactor MLB At Bat ad suppression patches ([0532f64](https://github.com/ajstrick81/morphe-androidtv-patches/commit/0532f6487570ef419f180f5043f8cc82c412497b))",
+  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.80/patches-1.4.80.mpp",
   "signature_download_url": "",
-  "version": "1.4.79"
+  "version": "1.4.80"
 }
