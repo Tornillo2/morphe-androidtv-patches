@@ -8,24 +8,25 @@
  *   ✅ VOD ads              — createVodStreamRequest() returns empty zzcx →
  *                             IMA SDK throws → fallback to pre-cached CDN URL
  *   ✅ Gambling ads (VOD)   — FanDuel, DraftKings, BetMGM via IMA SDK path
- *   ✅ Between-innings ads  — CreateMediaItemWithAdsUseCase blocked upstream →
- *                             DAI API and IMA SDK ad init both suppressed
+ *   ✅ Between-innings ads  — Ad break entry point (Lv70/k;.b) blocked →
+ *                             adMetadata/podMetadata chain cancelled
+ *   ✅ DAI pod segments     — LinearGoogleDaiListener pod metadata timer
+ *                             blocked → googlevideo.com dclk_video_ads
+ *                             segments not fetched (depth-of-defense)
  *   ➡️ Live games           — DAI untouched (createLiveStreamRequest path)
  *
- * SUSPEND FUNCTION STRATEGY:
- *   CreateMediaItemWithAdsUseCase is a Kotlin suspend function.
- *   It compiles to a method returning Ljava/lang/Object; with a Continuation
- *   parameter. return-void is invalid — instead inject:
- *     const/4 v0, 0x0
- *     return-object v0
- *   This returns null Object, completing the coroutine without executing
- *   the ad initialization body.
+ * FINGERPRINT VERIFICATION:
+ *   All fingerprints verified via full APK bytecode analysis.
+ *   Exact class names, method signatures, and string references confirmed.
  *
- * NOTE ON PublicaAdBreakStartedFingerprint (REMOVED):
- *   The log string "[MlbMediaPlayer] onAdBreakStarted" lives in a different
- *   class than PublicaBidListener — the fingerprint never matched.
- *   CreateMediaItemWithAdsUseCase is the cleaner upstream intercept and has
- *   its own confirmed log strings directly in the method body.
+ *   Patch 3 — Lv70/k;.b(Lo60/c$c; Lo60/c; Z)V
+ *     Plain void method (NOT suspend). return-void is correct.
+ *     Strings in body: "[MlbMediaPlayer] onAdBreakStarted", "adMetadata",
+ *     "podMetadata", "breakStarted", "PlayerAdEventListener"
+ *
+ *   Patch 4 — Lz70/i;.z()V
+ *     Plain void method, no parameters, single string ref.
+ *     return-void cancels DAI pod metadata fetch.
  */
 
 package app.morphe.patches.mlbtv
@@ -45,7 +46,7 @@ val atbatPatch = bytecodePatch(
         // ------------------------------------------------------------------
         // Patch 1: VOD SSAI & Gambling Content — createVodStreamRequest
         //
-        // Returns a valid but empty zzcx StreamRequest → IMA SDK throws →
+        // Returns valid but empty zzcx StreamRequest → IMA SDK throws →
         // exception caught → fallback to pre-cached CDN URL (nm0.c).
         // Live games use createLiveStreamRequest() — separate path, untouched.
         // ------------------------------------------------------------------
@@ -70,24 +71,32 @@ val atbatPatch = bytecodePatch(
         )
 
         // ------------------------------------------------------------------
-        // Patch 3: DAI/IMA Stream Init — CreateMediaItemWithAdsUseCase
+        // Patch 3: Between-Innings Ad Break Entry Point
         //
-        // Upstream intercept for between-innings commercial breaks.
-        // Controls both "Playing stream with DAI API" and "Playing stream
-        // with IMA SDK" paths. Returning null Object (0x0) completes the
-        // coroutine without initializing any ad stream.
-        //
-        // Confirmed unobfuscated in classes6.dex:
-        //   mlb.atbat.media.player.ads.CreateMediaItemWithAdsUseCase
-        //
-        // If this causes live game issues, comment out this block only.
-        // VOD patches above are independent and unaffected.
+        // Verified: Lv70/k;.b(Lo60/c$c; Lo60/c; Z)V
+        // Plain void method — return-void is correct.
+        // Cancels adMetadata + podMetadata chain → no dclk_video_ads fetched.
+        // Expected: commercial break placeholder shown instead of gambling ads.
         // ------------------------------------------------------------------
-        CreateMediaItemWithAdsFingerprint.method.addInstructions(
+        AdBreakStartedFingerprint.method.addInstructions(
             0,
             """
-                const/4 v0, 0x0
-                return-object v0
+                return-void
+            """.trimIndent(),
+        )
+
+        // ------------------------------------------------------------------
+        // Patch 4: DAI Pod Metadata Timer — LinearGoogleDaiListener
+        //
+        // Verified: Lz70/i;.z()V
+        // Plain void method, no parameters.
+        // Depth-of-defense: prevents googlevideo.com ad segment requests
+        // even if Patch 3 is somehow bypassed.
+        // ------------------------------------------------------------------
+        LinearDaiPodMetadataFingerprint.method.addInstructions(
+            0,
+            """
+                return-void
             """.trimIndent(),
         )
     }
