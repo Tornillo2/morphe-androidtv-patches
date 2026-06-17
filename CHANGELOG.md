@@ -1,3 +1,10 @@
+## [1.4.78](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.77...v1.4.78) (2026-06-17)
+
+
+### Bug Fixes
+
+* Refactor ad break logic and update comments ([f8e340e](https://github.com/ajstrick81/morphe-androidtv-patches/commit/f8e340e2e48b415e83c392e4a608b9c3862c725a))
+
 ## [1.4.77](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.76...v1.4.77) (2026-06-17)
 
 

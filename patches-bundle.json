@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-06-17T00:20:09",
-  "description": "## [1.4.77](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.76...v1.4.77) (2026-06-17)\n\n\n### Bug Fixes\n\n* Update patch notes and adjust return types for suspend functions ([c8eb1f5](https://github.com/ajstrick81/morphe-androidtv-patches/commit/c8eb1f5cfc5ce86c0669671b3e7aeb78c6b1e17b))",
-  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.77/patches-1.4.77.mpp",
+  "created_at": "2026-06-17T00:28:12",
+  "description": "## [1.4.78](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.77...v1.4.78) (2026-06-17)\n\n\n### Bug Fixes\n\n* Refactor ad break logic and update comments ([f8e340e](https://github.com/ajstrick81/morphe-androidtv-patches/commit/f8e340e2e48b415e83c392e4a608b9c3862c725a))",
+  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.78/patches-1.4.78.mpp",
   "signature_download_url": "",
-  "version": "1.4.77"
+  "version": "1.4.78"
 }
