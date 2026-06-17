@@ -7,22 +7,34 @@
  * PATCH COVERAGE:
  *
  *   Patch 1a/1b — VOD SSAI & Gambling Ads (createVodStreamRequest)
- *     At Bat uses identical IMA SDK v3 as Paramount+ v16.8.0.
+ *     Identical IMA SDK v3 as Paramount+ v16.8.0.
  *     Empty zzcx → IMA SDK throws → fallback to pre-cached CDN URL.
- *     Live games use createLiveStreamRequest() — separate path, untouched.
  *
  *   Patch 3 — Between-Innings Ad Break (PublicaBidListener.onAdBreakStarted)
- *     Confirmed via logcat + DEX analysis (classes6.dex):
- *       "[MlbMediaPlayer] onAdBreakStarted"
- *       "[LinearGoogleDaiListener] Starting pod metadata timer"
- *       googlevideo.com/.../source/dclk_video_ads (responseCode: 200)
- *     return-void cancels Publica auction + DAI pod metadata + dclk_video_ads segments.
- *     BetMGM/Bet365 gambling ads replaced by "Commercial Break - We'll be right back".
+ *     NOTE: onAdBreakStarted is a Kotlin SUSPEND FUNCTION.
+ *     returnType = "Ljava/lang/Object;" (not "V").
+ *     Confirmed via lambda class: PublicaBidListener$onAdBreakStarted$1
+ *     return-void is NOT valid for suspend functions — see patch notes.
  *
- *   Patch 4 — Publica Bid Upstream (GetPublicaBidsUseCase)
- *     Depth-of-defense: kills ad bid request upstream of ad break trigger.
- *     If this causes compile error (suspend function), comment it out —
- *     Patch 3 alone is sufficient.
+ *   Patch 4 — CreateMediaItemWithAdsUseCase (DAI/IMA stream initialization)
+ *     This class sits between MlbPlayerComponent.startPlayback and the
+ *     IMA SDK. It decides whether to use "DAI API" or "IMA SDK" path.
+ *     Log strings confirmed in classes6.dex:
+ *       "[CreateMediaItemWithAdsUseCase] Playing stream with DAI API"
+ *       "[CreateMediaItemWithAdsUseCase] Playing stream with IMA SDK"
+ *     Targeting the invoke/execute method here blocks ALL ad stream
+ *     initialization upstream of both VOD and between-innings ads.
+ *     This is also a suspend function — returnType = "Ljava/lang/Object;"
+ *
+ * SUSPEND FUNCTION NOTE:
+ *   Kotlin suspend functions compile to methods with signature:
+ *     fun methodName(params..., continuation: Continuation<T>): Object
+ *   You CANNOT return-void. Instead inject:
+ *     const/4 v0, 0x0
+ *     return-object v0
+ *   Or better: return the COROUTINES_SUSPENDED sentinel to signal suspension
+ *   without executing the method body. But the safest approach for ad
+ *   suppression is to target the non-suspend wrapper or use a different hook.
  */
 
 package app.morphe.patches.mlbtv
@@ -62,13 +74,17 @@ internal object VodStreamRequest4ArgFingerprint : Fingerprint(
 // ---------------------------------------------------------------------------
 // Patch 3: Between-Innings Ad Break — PublicaBidListener.onAdBreakStarted
 //
-// Highest-level intercept for commercial breaks. Confirmed unobfuscated in
-// classes6.dex: mlb.atbat.media.player.listener.publica.PublicaBidListener
-// return-void cancels: Publica auction → DAI pod metadata → dclk_video_ads
+// onAdBreakStarted is a Kotlin suspend function — returnType is Object.
+// The lambda class PublicaBidListener$onAdBreakStarted$1 confirms this.
+// We cannot use return-void. Instead we return null (Object) which causes
+// the coroutine to complete without executing its body.
+//
+// Class confirmed unobfuscated in classes6.dex:
+//   mlb.atbat.media.player.listener.publica.PublicaBidListener
 // ---------------------------------------------------------------------------
 
 internal object PublicaAdBreakStartedFingerprint : Fingerprint(
-    returnType = "V",
+    returnType = "Ljava/lang/Object;",
     strings = listOf("[MlbMediaPlayer] onAdBreakStarted"),
     custom = { method, _ ->
         method.definingClass.endsWith("PublicaBidListener;") &&
@@ -77,18 +93,25 @@ internal object PublicaAdBreakStartedFingerprint : Fingerprint(
 )
 
 // ---------------------------------------------------------------------------
-// Patch 4: Publica Bid Upstream — GetPublicaBidsUseCase
+// Patch 4: DAI/IMA Stream Initialization — CreateMediaItemWithAdsUseCase
 //
-// Depth-of-defense. Confirmed unobfuscated in classes6.dex:
-// mlb.atbat.data.usecase.GetPublicaBidsUseCase
-// NOTE: If this is a suspend function, the fingerprint may not match —
-// that is safe to ignore, Patch 3 handles the primary intercept.
+// Sits between MlbPlayerComponent.startPlayback and the IMA SDK.
+// Controls both "Playing stream with DAI API" and "Playing stream with IMA SDK"
+// paths for between-innings ad breaks.
+//
+// Class confirmed unobfuscated in classes6.dex:
+//   mlb.atbat.media.player.ads.CreateMediaItemWithAdsUseCase
+//
+// Also a suspend function — return null (Object) to suppress.
 // ---------------------------------------------------------------------------
 
-internal object GetPublicaBidsFingerprint : Fingerprint(
-    returnType = "V",
-    strings = listOf("Publica bids count: ", "Failed to get Publica ads"),
+internal object CreateMediaItemWithAdsFingerprint : Fingerprint(
+    returnType = "Ljava/lang/Object;",
+    strings = listOf(
+        "[CreateMediaItemWithAdsUseCase] Playing stream with DAI API",
+        "[CreateMediaItemWithAdsUseCase] Playing stream with IMA SDK",
+    ),
     custom = { method, _ ->
-        method.definingClass.endsWith("GetPublicaBidsUseCase;")
+        method.definingClass.endsWith("CreateMediaItemWithAdsUseCase;")
     },
 )
