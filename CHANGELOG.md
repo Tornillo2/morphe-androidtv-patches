@@ -1,3 +1,10 @@
+## [1.4.79](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.78...v1.4.79) (2026-06-17)
+
+
+### Bug Fixes
+
+* Refactor comments and patch descriptions in AtBatPatch ([aafcfe5](https://github.com/ajstrick81/morphe-androidtv-patches/commit/aafcfe5b8514d0408bf2dc7b01e85cf697db2a78))
+
 ## [1.4.78](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.77...v1.4.78) (2026-06-17)
 
 
