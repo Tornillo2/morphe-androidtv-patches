@@ -5,22 +5,38 @@
  *   v26.8.1  (versionCode 1750000022) — com.bamnetworks.mobile.android.gameday
  *
  * Coverage:
- *   ✅ VOD ads              — createVodStreamRequest() returns empty zzcx →
+ *   ✅ VOD ads              — createVodStreamRequest() returns empty zzdm →
  *                             IMA SDK throws → fallback to pre-cached CDN URL
  *   ✅ Gambling ads (VOD)   — FanDuel, DraftKings, BetMGM via IMA SDK path
- *   ✅ Between-innings ads  — onAdEvent(AdEvent) blocked → IMA SDK cannot
- *                             dispatch "Ad Break Started" or schedule any
- *                             googlevideo.com dclk_video_ads segments
- *   ✅ DAI pod segments     — LinearGoogleDaiListener pod metadata timer
- *                             blocked (depth-of-defense)
- *   ➡️ Live games           — Needs testing; onAdEvent is a live path too.
- *                             If live games break, comment out Patch 3 only.
+ *   ✅ Between-innings ads  — Lb6/k;.b(Uri) returns empty zzdm →
+ *                             ImaServerSideAdInsertionMediaSource fails to init
+ *                             → ExoPlayer falls back to plain HLS without ads
+ *   ➡️ Live games           — Untouched (createLiveStreamRequest separate path)
  *
- * WHY PREVIOUS PATCH FAILED:
- *   Lv70/k;.b() "[MlbMediaPlayer] onAdBreakStarted" is called by onAdEvent
- *   AFTER IMA SDK has already scheduled the ad segments. Patching b() was
- *   too late in the chain — segments were already en route to the player.
- *   onAdEvent() is the correct upstream intercept.
+ * BYTECODE VERIFIED — IMA SDK StreamRequest in this APK version:
+ *   Class:       Lcom/google/ads/interactivemedia/v3/impl/zzdm;
+ *   Constructor: <init>(Lcom/google/ads/interactivemedia/v3/internal/zzafs;)V
+ *   VOD type:    Lcom/google/ads/interactivemedia/v3/internal/zzafs;->zzd
+ *   Live type:   Lcom/google/ads/interactivemedia/v3/internal/zzafs;->zzc (untouched)
+ *
+ * VOD PATCH STRATEGY (Patches 1a/1b):
+ *   Same empty-StreamRequest technique as Paramount+ v16.8.0 but updated
+ *   to use zzdm/zzafs (the correct classes in this APK version).
+ *   .registers 6, v0=new zzdm, v1=zzafs VOD type constant.
+ *   No setter methods called → IMA SDK throws on requestStream() → fallback.
+ *
+ * BETWEEN-INNINGS PATCH STRATEGY (Patch 2):
+ *   Root cause confirmed via logcat + bytecode: ads are SSAI-stitched into
+ *   the HLS manifest server-side by dai.google.com. ExoPlayer plays them
+ *   as normal video segments — app-level event patches fire too late.
+ *
+ *   Lb6/k;.b(Uri) parses ssai://dai.google.com URIs into StreamRequests
+ *   for ImaServerSideAdInsertionMediaSource (Lb6/h;). Return empty zzdm
+ *   here → SSAI media source constructor receives unpopulated StreamRequest
+ *   → fails initialization → ExoPlayer falls back to plain HLS → no ads.
+ *
+ *   Same empty-StreamRequest concept as VOD, same register layout.
+ *   .registers 8, p0=this, p1=Uri, v0=new zzdm, v1=zzafs VOD type.
  */
 
 package app.morphe.patches.mlbtv
@@ -32,69 +48,69 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 @Suppress("unused")
 val atbatPatch = bytecodePatch(
     name = "MLB At Bat Android TV",
-    description = "Removes VOD ads, between-innings gambling ads, and sportsbook promotions while preserving live game playback.",
+    description = "Removes VOD ads and between-innings gambling ads while preserving live game playback.",
 ) {
     compatibleWith(AppCompatibilities.MLB_TV)
 
     execute {
         // ------------------------------------------------------------------
-        // Patch 1: VOD SSAI & Gambling Content — createVodStreamRequest
+        // Patch 1a: VOD SSAI — createVodStreamRequest (3-arg)
         //
-        // Returns valid but empty zzcx StreamRequest → IMA SDK throws →
-        // exception caught → fallback to pre-cached CDN URL (nm0.c).
-        // Live games use createLiveStreamRequest() — separate path, untouched.
+        // Returns empty zzdm StreamRequest (no setters called).
+        // IMA SDK throws on requestStream() → exception caught →
+        // AVIA falls back to pre-cached CDN URL → VOD plays without ads.
+        //
+        // Bytecode verified: .registers 6
+        //   v0 = new zzdm instance
+        //   v1 = zzafs VOD type constant (zzd field)
         // ------------------------------------------------------------------
         VodStreamRequest3ArgFingerprint.method.addInstructions(
             0,
             """
-                new-instance v0, Lcom/google/ads/interactivemedia/v3/impl/zzcx;
-                sget-object v1, Lcom/google/ads/interactivemedia/v3/internal/zzafv;->zzd:Lcom/google/ads/interactivemedia/v3/internal/zzafv;
-                invoke-direct {v0, v1}, Lcom/google/ads/interactivemedia/v3/impl/zzcx;-><init>(Lcom/google/ads/interactivemedia/v3/internal/zzafv;)V
+                new-instance v0, Lcom/google/ads/interactivemedia/v3/impl/zzdm;
+                sget-object v1, Lcom/google/ads/interactivemedia/v3/internal/zzafs;->zzd:Lcom/google/ads/interactivemedia/v3/internal/zzafs;
+                invoke-direct {v0, v1}, Lcom/google/ads/interactivemedia/v3/impl/zzdm;-><init>(Lcom/google/ads/interactivemedia/v3/internal/zzafs;)V
                 return-object v0
             """.trimIndent(),
         )
 
+        // ------------------------------------------------------------------
+        // Patch 1b: VOD SSAI — createVodStreamRequest (4-arg)
+        // Same as 1a, extra networkCode param doesn't affect register layout.
+        // ------------------------------------------------------------------
         VodStreamRequest4ArgFingerprint.method.addInstructions(
             0,
             """
-                new-instance v0, Lcom/google/ads/interactivemedia/v3/impl/zzcx;
-                sget-object v1, Lcom/google/ads/interactivemedia/v3/internal/zzafv;->zzd:Lcom/google/ads/interactivemedia/v3/internal/zzafv;
-                invoke-direct {v0, v1}, Lcom/google/ads/interactivemedia/v3/impl/zzcx;-><init>(Lcom/google/ads/interactivemedia/v3/internal/zzafv;)V
+                new-instance v0, Lcom/google/ads/interactivemedia/v3/impl/zzdm;
+                sget-object v1, Lcom/google/ads/interactivemedia/v3/internal/zzafs;->zzd:Lcom/google/ads/interactivemedia/v3/internal/zzafs;
+                invoke-direct {v0, v1}, Lcom/google/ads/interactivemedia/v3/impl/zzdm;-><init>(Lcom/google/ads/interactivemedia/v3/internal/zzafs;)V
                 return-object v0
             """.trimIndent(),
         )
 
         // ------------------------------------------------------------------
-        // Patch 3: IMA SDK Ad Event Dispatcher — onAdEvent(AdEvent)V
+        // Patch 2: Between-Innings SSAI — Lb6/k;.b(Uri)→StreamRequest
         //
-        // Verified: Lv70/k;.onAdEvent(AdEvent)V
-        // This is the IMA SDK AdEvent listener — true upstream entry point
-        // for ALL between-innings ad events.
+        // Parses ssai://dai.google.com URIs for ImaServerSideAdInsertionMediaSource.
+        // Returning empty zzdm here causes SSAI media source init to fail →
+        // ExoPlayer falls back to plain HLS → no between-innings gambling ads.
         //
-        // return-void prevents "Ad Break Started" dispatch and all
-        // downstream googlevideo.com dclk_video_ads segment scheduling.
+        // Bytecode verified: .registers 8
+        //   p0 = this, p1 = Uri (input parameter)
+        //   v0 = new zzdm instance (safe — not a parameter register)
+        //   v1 = zzafs VOD type constant
         //
-        // NOTE: If live games are affected, comment out this patch only.
-        // The VOD patches above are independent and unaffected.
+        // The SSAI source uses the StreamRequest to request a DAI stream.
+        // Without valid contentSourceId/assetKey/videoId, the request fails
+        // and ExoPlayer's fallback mechanism serves the plain HLS stream.
         // ------------------------------------------------------------------
-        AdEventListenerFingerprint.method.addInstructions(
+        SsaiStreamRequestFingerprint.method.addInstructions(
             0,
             """
-                return-void
-            """.trimIndent(),
-        )
-
-        // ------------------------------------------------------------------
-        // Patch 4: DAI Pod Metadata Timer — Lz70/i;.z()V
-        //
-        // Verified: no parameters, single string ref in body.
-        // Depth-of-defense: prevents DAI pod metadata fetch even if
-        // Patch 3 is bypassed by a different ad event code path.
-        // ------------------------------------------------------------------
-        LinearDaiPodMetadataFingerprint.method.addInstructions(
-            0,
-            """
-                return-void
+                new-instance v0, Lcom/google/ads/interactivemedia/v3/impl/zzdm;
+                sget-object v1, Lcom/google/ads/interactivemedia/v3/internal/zzafs;->zzd:Lcom/google/ads/interactivemedia/v3/internal/zzafs;
+                invoke-direct {v0, v1}, Lcom/google/ads/interactivemedia/v3/impl/zzdm;-><init>(Lcom/google/ads/interactivemedia/v3/internal/zzafs;)V
+                return-object v0
             """.trimIndent(),
         )
     }
