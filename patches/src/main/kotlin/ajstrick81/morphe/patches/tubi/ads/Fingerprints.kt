@@ -22,8 +22,7 @@ object FoxImaAdsLoadedListenerFingerprint : Fingerprint(
 // Hook 3 — FoxPlayer.clearVodAds()
 object FoxPlayerClearVodAdsFingerprint : Fingerprint(
     definingClass = "Lcom/fox/android/video/player/FoxPlayer;",
-    name = "clearVodAds",
-    accessFlags = listOf(AccessFlags.PRIVATE, AccessFlags.FINAL)
+    name = "clearVodAds"
 )
 
 // Hook 4 — ImagePauseAds.l(VideoApi, long)
