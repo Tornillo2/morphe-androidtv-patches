@@ -1,3 +1,11 @@
+## [1.4.83](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.82...v1.4.83) (2026-06-18)
+
+
+### Bug Fixes
+
+* push new version: Enhance documentation for ad delivery and SSAI handling ([8fe99d7](https://github.com/ajstrick81/morphe-androidtv-patches/commit/8fe99d78ad8a2405f9a81ef98829b5cbfba53a12))
+* Refactor ad delivery architecture comments in AtBatFingerprints.kt ([84da6e7](https://github.com/ajstrick81/morphe-androidtv-patches/commit/84da6e776d86f759931d49c292a3727b80535699))
+
 ## [1.4.82](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.81...v1.4.82) (2026-06-18)
 
 
