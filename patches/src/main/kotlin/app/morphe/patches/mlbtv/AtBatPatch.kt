@@ -5,38 +5,41 @@
  *   v26.8.1  (versionCode 1750000022) — com.bamnetworks.mobile.android.gameday
  *
  * Coverage:
- *   ✅ VOD ads              — createVodStreamRequest() returns empty zzdm →
+ *   ✅ VOD ads              — createVodStreamRequest() empty zzdm →
  *                             IMA SDK throws → fallback to pre-cached CDN URL
- *   ✅ Gambling ads (VOD)   — FanDuel, DraftKings, BetMGM via IMA SDK path
- *   ✅ Between-innings ads  — Lb6/k;.b(Uri) returns empty zzdm →
- *                             ImaServerSideAdInsertionMediaSource fails to init
- *                             → ExoPlayer falls back to plain HLS without ads
- *   ➡️ Live games           — Untouched (createLiveStreamRequest separate path)
+ *   ✅ Between-innings SSAI — Lb6/k;.b(Uri) empty zzdm →
+ *                             ImaServerSideAdInsertionMediaSource fails
+ *   ✅ MLB EVI ad segments  — Lz70/b;.o() TXXX cue handler blocked →
+ *                             tv-gmc.mlb.com/EVI/ segments never dispatched
+ *   ✅ Google DAI ad cues   — Lb6/h$c;.onMetadata() TXXX handler blocked →
+ *                             dclk_video_ads segments never inserted
+ *   ➡️ Live games           — Untouched (createLiveStreamRequest path)
+ *   ➡️ Game stream          — Untouched (tv-gmc.mlb.com/{date}/{gameId}-HD
+ *                             segments bypass all patched code paths)
  *
- * BYTECODE VERIFIED — IMA SDK StreamRequest in this APK version:
- *   Class:       Lcom/google/ads/interactivemedia/v3/impl/zzdm;
- *   Constructor: <init>(Lcom/google/ads/interactivemedia/v3/internal/zzafs;)V
- *   VOD type:    Lcom/google/ads/interactivemedia/v3/internal/zzafs;->zzd
- *   Live type:   Lcom/google/ads/interactivemedia/v3/internal/zzafs;->zzc (untouched)
+ * WHY TXXX PATCHING WORKS:
+ *   tv-gmc.mlb.com serves both game content AND /EVI/ ad segments on the
+ *   same domain — DNS blocking kills the stream. Path-level blocking is
+ *   impossible at the DNS layer.
  *
- * VOD PATCH STRATEGY (Patches 1a/1b):
- *   Same empty-StreamRequest technique as Paramount+ v16.8.0 but updated
- *   to use zzdm/zzafs (the correct classes in this APK version).
- *   .registers 6, v0=new zzdm, v1=zzafs VOD type constant.
- *   No setter methods called → IMA SDK throws on requestStream() → fallback.
+ *   The /EVI/ ad segments are scheduled via HLS TXXX timed metadata cues
+ *   embedded in the DAI manifest. Both handlers must be blocked:
  *
- * BETWEEN-INNINGS PATCH STRATEGY (Patch 2):
- *   Root cause confirmed via logcat + bytecode: ads are SSAI-stitched into
- *   the HLS manifest server-side by dai.google.com. ExoPlayer plays them
- *   as normal video segments — app-level event patches fire too late.
+ *   Lz70/b;.o() — MLB's handler:
+ *     TXXX cue → parse ad timing → launch Lz70/d;/Lz70/e; coroutines
+ *     → fetch pod metadata → dispatch EVI URLs to ExoPlayer
+ *     return-void → ExoPlayer receives no EVI segment URLs → game continues
  *
- *   Lb6/k;.b(Uri) parses ssai://dai.google.com URIs into StreamRequests
- *   for ImaServerSideAdInsertionMediaSource (Lb6/h;). Return empty zzdm
- *   here → SSAI media source constructor receives unpopulated StreamRequest
- *   → fails initialization → ExoPlayer falls back to plain HLS → no ads.
+ *   Lb6/h$c;.onMetadata() — IMA SSAI handler:
+ *     TXXX cue → onUserTextReceived() callbacks → DAI segment insertion
+ *     return-void → no dclk_video_ads segments inserted
  *
- *   Same empty-StreamRequest concept as VOD, same register layout.
- *   .registers 8, p0=this, p1=Uri, v0=new zzdm, v1=zzafs VOD type.
+ * BYTECODE VERIFIED:
+ *   StreamRequest impl:  Lcom/google/ads/interactivemedia/v3/impl/zzdm;
+ *   VOD type constant:   Lcom/google/ads/interactivemedia/v3/internal/zzafs;->zzd
+ *   zzdm constructor:    <init>(Lcom/google/ads/interactivemedia/v3/internal/zzafs;)V
+ *   VOD patch registers: .registers 6, v0=new zzdm, v1=zzafs type
+ *   SSAI patch registers:.registers 8, p1=Uri input, v0=new zzdm, v1=zzafs type
  */
 
 package app.morphe.patches.mlbtv
@@ -48,21 +51,15 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 @Suppress("unused")
 val atbatPatch = bytecodePatch(
     name = "MLB At Bat Android TV",
-    description = "Removes VOD ads and between-innings gambling ads while preserving live game playback.",
+    description = "Removes VOD ads and between-innings gambling ads while preserving live game and stream playback.",
 ) {
     compatibleWith(AppCompatibilities.MLB_TV)
 
     execute {
         // ------------------------------------------------------------------
         // Patch 1a: VOD SSAI — createVodStreamRequest (3-arg)
-        //
-        // Returns empty zzdm StreamRequest (no setters called).
-        // IMA SDK throws on requestStream() → exception caught →
-        // AVIA falls back to pre-cached CDN URL → VOD plays without ads.
-        //
-        // Bytecode verified: .registers 6
-        //   v0 = new zzdm instance
-        //   v1 = zzafs VOD type constant (zzd field)
+        // Empty zzdm → IMA SDK throws → fallback to pre-cached CDN URL.
+        // Live games use createLiveStreamRequest() — separate path, untouched.
         // ------------------------------------------------------------------
         VodStreamRequest3ArgFingerprint.method.addInstructions(
             0,
@@ -92,17 +89,8 @@ val atbatPatch = bytecodePatch(
         // Patch 2: Between-Innings SSAI — Lb6/k;.b(Uri)→StreamRequest
         //
         // Parses ssai://dai.google.com URIs for ImaServerSideAdInsertionMediaSource.
-        // Returning empty zzdm here causes SSAI media source init to fail →
-        // ExoPlayer falls back to plain HLS → no between-innings gambling ads.
-        //
-        // Bytecode verified: .registers 8
-        //   p0 = this, p1 = Uri (input parameter)
-        //   v0 = new zzdm instance (safe — not a parameter register)
-        //   v1 = zzafs VOD type constant
-        //
-        // The SSAI source uses the StreamRequest to request a DAI stream.
-        // Without valid contentSourceId/assetKey/videoId, the request fails
-        // and ExoPlayer's fallback mechanism serves the plain HLS stream.
+        // Empty zzdm → SSAI source fails init → ExoPlayer fallback to plain HLS.
+        // Verified: registers=8, p0=this, p1=Uri, v0=new zzdm, v1=zzafs type.
         // ------------------------------------------------------------------
         SsaiStreamRequestFingerprint.method.addInstructions(
             0,
@@ -111,6 +99,34 @@ val atbatPatch = bytecodePatch(
                 sget-object v1, Lcom/google/ads/interactivemedia/v3/internal/zzafs;->zzd:Lcom/google/ads/interactivemedia/v3/internal/zzafs;
                 invoke-direct {v0, v1}, Lcom/google/ads/interactivemedia/v3/impl/zzdm;-><init>(Lcom/google/ads/interactivemedia/v3/internal/zzafs;)V
                 return-object v0
+            """.trimIndent(),
+        )
+
+        // ------------------------------------------------------------------
+        // Patch 3: MLB TXXX Ad Cue Handler — Lz70/b;.o(Ll5/t;)V
+        //
+        // Verified: registers=15, TXXX string, Ll5/t; param. Plain void method.
+        // Cancels MLB EVI ad dispatch: no pod metadata fetch, no EVI segment
+        // URLs delivered to ExoPlayer. Game stream continues uninterrupted.
+        // ------------------------------------------------------------------
+        MlbTxxxAdCueFingerprint.method.addInstructions(
+            0,
+            """
+                return-void
+            """.trimIndent(),
+        )
+
+        // ------------------------------------------------------------------
+        // Patch 4: IMA SSAI TXXX Handler — Lb6/h$c;.onMetadata(Ll5/t;)V
+        //
+        // Verified: registers=11, TXXX string, Ll5/t; param, name=onMetadata.
+        // Cancels Google DAI (dclk_video_ads) segment insertion alongside
+        // MLB EVI. Belt-and-suspenders with Patch 3.
+        // ------------------------------------------------------------------
+        ImaSsaiTxxxHandlerFingerprint.method.addInstructions(
+            0,
+            """
+                return-void
             """.trimIndent(),
         )
     }
