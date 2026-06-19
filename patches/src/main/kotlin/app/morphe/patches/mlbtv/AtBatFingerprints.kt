@@ -6,25 +6,37 @@
  *
  * ALL FINGERPRINTS VERIFIED via full APK bytecode analysis (androguard).
  *
- * AD DELIVERY ARCHITECTURE (confirmed via logcat + bytecode):
+ * TXXX METADATA DISPATCH ARCHITECTURE (confirmed via bytecode trace):
  *
- *   tv-gmc.mlb.com serves BOTH game content AND /EVI/ ad segments:
- *     Game:  tv-gmc.mlb.com/{date}/{gameId}-HD_7500K/.../seg.ts
- *     Ads:   tv-gmc.mlb.com/EVI/{date}/{gameId}-AD-evi_7500K/.../seg.ts
- *   DNS blocking cannot distinguish paths — domain blocking kills the stream.
+ *   ExoPlayer fires onMetadata(Ll5/t;) on all registered listeners
+ *       ↓
+ *   Lu70/i;.onMetadata(Ll5/t;)V  ← SINGLE dispatch point
+ *       Logs: "[ExoMediaPlayer] metadata received from stream"
+ *       Iterates f0 ArrayList of Ly70/s; listeners
+ *       Calls invoke-interface Ly70/s;->o(Ll5/t;)V on each
+ *       ↓
+ *   Lz70/b;.o(Ll5/t;)V  ← MLB TXXX handler (registers=15, has TXXX string)
+ *       Reads TXXX cue → launches Lz70/d;/Lz70/e; coroutines
+ *       → fetches pod metadata → dispatches tv-gmc.mlb.com/EVI/ URLs
+ *       ↓
+ *   Lb6/h$c;.onMetadata(Ll5/t;)V  ← IMA SSAI handler (registers=11, has TXXX)
+ *       Calls onUserTextReceived() → DAI (dclk_video_ads) segment insertion
  *
- *   Both ad systems are scheduled via HLS TXXX timed metadata cues.
- *   Two handlers process these cues and must both be blocked:
+ * PREVIOUS PATCH FAILURE REASON:
+ *   MlbTxxxAdCueFingerprint used "method.name != onMetadata" which matched
+ *   empty stub delegates (registers=2) instead of Lz70/b;.o (registers=15).
+ *   Morphe matched a stub — patch compiled but did nothing at runtime.
  *
- *   Patch 3 — Lz70/b;.o(Ll5/t;)V  [MLB TXXX handler]
- *     Reads TXXX cue → launches coroutines Lz70/d;/Lz70/e; → fetches
- *     pod metadata → dispatches EVI segment URLs to ExoPlayer.
- *     VERIFIED unique: only method in APK with TXXX string + Ll5/t; param
- *     that is NOT named "onMetadata".
+ * CORRECT STRATEGY:
+ *   Patch Lu70/i;.onMetadata — the single upstream dispatcher.
+ *   return-void here stops ALL downstream listener dispatch in one shot.
+ *   No need to patch Lz70/b;.o or Lb6/h$c;.onMetadata separately.
  *
- *   Patch 4 — Lb6/h$c;.onMetadata(Ll5/t;)V  [IMA SSAI TXXX handler]
- *     Reads TXXX cue → onUserTextReceived() callbacks → DAI segment insertion.
- *     VERIFIED unique: only "onMetadata" in class Lb6/h$c;
+ *   VERIFIED UNIQUE: Only method in APK with:
+ *     - name = "onMetadata"
+ *     - string = "[ExoMediaPlayer] metadata received from stream"
+ *     - proto = (Ll5/t;)V
+ *     - registers = 5
  *
  * IMA SDK StreamRequest (verified from createVodStreamRequest bytecode):
  *   Class:       Lcom/google/ads/interactivemedia/v3/impl/zzdm;
@@ -69,10 +81,10 @@ internal object VodStreamRequest4ArgFingerprint : Fingerprint(
 // ---------------------------------------------------------------------------
 // Patch 2: Between-Innings SSAI — Lb6/k;.b(Uri)→StreamRequest
 //
-// VERIFIED: registers=8, 17 strings including "ssai", "dai.google.com",
+// VERIFIED: registers=8, strings include "ssai", "dai.google.com",
 //   "assetKey", "Invalid URI scheme or authority."
-// Unique: only method in APK taking Uri param returning StreamRequest
-//   with these strings.
+// Parses ssai://dai.google.com URIs for ImaServerSideAdInsertionMediaSource.
+// Empty zzdm → SSAI source fails init → ExoPlayer falls back to plain HLS.
 // ---------------------------------------------------------------------------
 
 internal object SsaiStreamRequestFingerprint : Fingerprint(
@@ -90,45 +102,27 @@ internal object SsaiStreamRequestFingerprint : Fingerprint(
 )
 
 // ---------------------------------------------------------------------------
-// Patch 3: MLB TXXX Ad Cue Handler — Lz70/b;.o(Ll5/t;)V
+// Patch 3: TXXX Metadata Dispatcher — Lu70/i;.onMetadata(Ll5/t;)V
 //
-// VERIFIED: returnType=V, param=Ll5/t;, only string in body = "TXXX"
-// UNIQUE: only method in APK with TXXX string + Ll5/t; param + returnType V
-//   that is NOT named "onMetadata" (confirmed by full APK scan).
+// VERIFIED: name=onMetadata, proto=(Ll5/t;)V, registers=5
+//   String: "[ExoMediaPlayer] metadata received from stream"
+//   Class:  Lu70/i; (ExoMediaPlayer listener wrapper)
 //
-// MLB-specific HLS timed metadata handler. Reads TXXX cue from DAI manifest,
-// launches coroutines Lz70/d; and Lz70/e; to fetch pod metadata and schedule
-// tv-gmc.mlb.com/EVI/ segment URLs. return-void cancels entire chain.
+// UNIQUE: Only method in APK with this string + name + proto combination.
+//
+// Single upstream dispatch point for ALL HLS timed metadata.
+// Iterates f0 ArrayList of Ly70/s; listeners and calls o(Ll5/t;) on each.
+// return-void here stops ALL downstream TXXX processing:
+//   - Lz70/b;.o()     → MLB EVI ad coroutines never launched
+//   - Lb6/h$c;.onMetadata() → IMA DAI segment insertion never triggered
+//   - tv-gmc.mlb.com/EVI/ and dclk_video_ads segments never dispatched
 // ---------------------------------------------------------------------------
 
-internal object MlbTxxxAdCueFingerprint : Fingerprint(
+internal object ExoMediaPlayerMetadataFingerprint : Fingerprint(
     returnType = "V",
-    strings = listOf("TXXX"),
-    custom = { method, _ ->
-        method.name != "onMetadata" &&
-            method.parameterTypes.size == 1 &&
-            method.parameterTypes[0] == "Ll5/t;"
-    },
-)
-
-// ---------------------------------------------------------------------------
-// Patch 4: IMA SSAI TXXX Handler — Lb6/h$c;.onMetadata(Ll5/t;)V
-//
-// VERIFIED: name=onMetadata, returnType=V, param=Ll5/t;, string="TXXX"
-//   definingClass contains "b6/h" (ImaSSAI inner listener class).
-// UNIQUE: only "onMetadata" in Lb6/h$c; taking Ll5/t; param.
-//
-// IMA SSAI layer handler. Calls onUserTextReceived() on all registered
-// VideoStreamPlayerCallback instances — triggers DAI segment insertion.
-// return-void suppresses IMA SSAI ad cues alongside MLB EVI (Patch 3).
-// ---------------------------------------------------------------------------
-
-internal object ImaSsaiTxxxHandlerFingerprint : Fingerprint(
-    returnType = "V",
-    strings = listOf("TXXX"),
+    strings = listOf("[ExoMediaPlayer] metadata received from stream"),
     custom = { method, _ ->
         method.name == "onMetadata" &&
-            method.definingClass.contains("b6/h") &&
             method.parameterTypes.size == 1 &&
             method.parameterTypes[0] == "Ll5/t;"
     },
