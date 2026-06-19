@@ -1,3 +1,10 @@
+## [1.4.85](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.84...v1.4.85) (2026-06-19)
+
+
+### Bug Fixes
+
+* Refactor metadata handling and patch DAI events ([ec8c6cc](https://github.com/ajstrick81/morphe-androidtv-patches/commit/ec8c6cc9d17d6617f80c4359616d56cb0afac6ed))
+
 ## [1.4.84](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.83...v1.4.84) (2026-06-19)
 
 
