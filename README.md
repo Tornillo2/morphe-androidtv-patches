@@ -69,8 +69,6 @@ All patches follow the same general workflow using **Morphe Manager**:
 
 ### ▶️ Prime Video
 
-> ⚠️ Patch is still being tested. For best results, pair with a DNS ad-filter like [AdGuard Home](https://adguard.com/adguard-home/overview.html) or [Pi-hole](https://pi-hole.net/).
-
 1. Go to [apkmirror.com](https://www.apkmirror.com) and search for:
    ```
    Prime Video 6.23.23+v15.5.0.70-armv7a (Android TV)
@@ -89,7 +87,7 @@ All patches follow the same general workflow using **Morphe Manager**:
    ```
    Paramount+ v16.8 (Android TV)
    ```
-2. ⚠️ Download only the version published by **CBS Interactive** — do **not** download the **Viacom** version
+2. ⚠️ Download only the version published by **CBS Interactive** — DO **NOT** download the **Viacom** version
 3. Download the `.apkm` file
 4. Select it in Morphe Manager
 5. Apply the patch
