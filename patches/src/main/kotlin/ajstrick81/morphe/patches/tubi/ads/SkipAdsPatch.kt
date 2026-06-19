@@ -1,31 +1,133 @@
-// ─────────────────────────────────────────────────────────────────────
+package ajstrick81.morphe.patches.tubi.ads
+
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.patch.bytecodePatch
+import ajstrick81.morphe.patches.tubi.shared.Constants
+
+@Suppress("unused")
+val skipAdsPatch = bytecodePatch(
+    name = "Skip ads",
+    description = "Suppresses all ad delivery systems in Tubi Android TV.",
+) {
+    compatibleWith(Constants.COMPATIBILITY)
+
+    execute {
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Hook 1 — FoxImaAdListeners.adEventListener_delegate$lambda$10$lambda$9
+        // ─────────────────────────────────────────────────────────────────────
+        FoxImaAdEventListenerFingerprint.method.addInstructions(0, "return-void")
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Hook 2 — FoxImaAdListeners.adsLoadedListener_delegate$lambda$4$lambda$3
+        // ─────────────────────────────────────────────────────────────────────
+        FoxImaAdsLoadedListenerFingerprint.method.addInstructions(0, "return-void")
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Hook 3 — FoxPlayer.clearVodAds()
+        // ─────────────────────────────────────────────────────────────────────
+        FoxPlayerClearVodAdsFingerprint.method.addInstructions(0, "return-void")
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Hook 4 — ImagePauseAds.l(VideoApi, long)
+        // ─────────────────────────────────────────────────────────────────────
+        TubiPauseAdsFingerprint.method.addInstructions(0, "return-void")
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Hook 5 — FoxImaStreamIdLoader.requestVODDAIUrl
+        // ─────────────────────────────────────────────────────────────────────
+        FoxImaVodStreamRequestFingerprint.method.addInstructions(
+            0,
+            """
+                const-string v0, "dai_blocked"
+                invoke-interface {p3, v0}, Lcom/fox/android/video/player/loaders/ImaStreamIdLoader${"$"}ImaStreamUrlCallback;->onFailure(Ljava/lang/String;)V
+                return-void
+            """
+        )
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Hook 6 — FoxImaStreamIdLoader.requestImaStreamId
+        // ─────────────────────────────────────────────────────────────────────
+        FoxImaLiveStreamRequestFingerprint.method.addInstructions(
+            0,
+            """
+                const-string v0, "dai_blocked"
+                invoke-interface {p3, v0}, Lcom/fox/android/video/player/loaders/ImaStreamIdLoader${"$"}ImaStreamIdCallback;->onFailure(Ljava/lang/String;)V
+                return-void
+            """
+        )
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Hook 7 — xo/C$c.shouldInterceptRequest(WebView, WebResourceRequest)
+        //
+        // WebView-layer ad domain interception. Blocks XHR/fetch requests
+        // to ad orchestration endpoints from the Tubi SPA. Cannot intercept
+        // media element (<video> src) requests — those require Hook 9.
+        // ─────────────────────────────────────────────────────────────────────
+        TubiWebClientInterceptFingerprint.method.addInstructions(
+            0,
+            """
+                if-eqz p2, :intercept_skip
+                invoke-interface {p2}, Landroid/webkit/WebResourceRequest;->getUrl()Landroid/net/Uri;
+                move-result-object v0
+                if-eqz v0, :intercept_skip
+                invoke-virtual {v0}, Landroid/net/Uri;->getHost()Ljava/lang/String;
+                move-result-object v1
+                if-eqz v1, :intercept_skip
+                const-string v2, "dai.google.com"
+                invoke-virtual {v1, v2}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+                move-result v3
+                if-nez v3, :intercept_block
+                const-string v2, "imasdk.googleapis.com"
+                invoke-virtual {v1, v2}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+                move-result v3
+                if-nez v3, :intercept_block
+                const-string v2, "doubleclick.net"
+                invoke-virtual {v1, v2}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+                move-result v3
+                if-nez v3, :intercept_block
+                const-string v2, "googletagmanager.com"
+                invoke-virtual {v1, v2}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+                move-result v3
+                if-nez v3, :intercept_block
+                const-string v2, "googlesyndication.com"
+                invoke-virtual {v1, v2}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+                move-result v3
+                if-nez v3, :intercept_block
+                const-string v2, "adrise.tv"
+                invoke-virtual {v1, v2}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+                move-result v3
+                if-nez v3, :intercept_block
+                const-string v2, "ads.production-public.tubi.io"
+                invoke-virtual {v1, v2}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+                move-result v3
+                if-nez v3, :intercept_block
+                const-string v2, "rainmaker.production-public.tubi.io"
+                invoke-virtual {v1, v2}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+                move-result v3
+                if-nez v3, :intercept_block
+                goto :intercept_skip
+                :intercept_block
+                new-instance v0, Landroid/webkit/WebResourceResponse;
+                const-string v1, "text/plain"
+                const-string v2, "utf-8"
+                const/4 v3, 0x0
+                new-array v3, v3, [B
+                new-instance v4, Ljava/io/ByteArrayInputStream;
+                invoke-direct {v4, v3}, Ljava/io/ByteArrayInputStream;-><init>([B)V
+                invoke-direct {v0, v1, v2, v4}, Landroid/webkit/WebResourceResponse;-><init>(Ljava/lang/String;Ljava/lang/String;Ljava/io/InputStream;)V
+                return-object v0
+                :intercept_skip
+                nop
+            """
+        )
+
+        // ─────────────────────────────────────────────────────────────────────
         // Hook 8 — xo/C$c.onPageFinished(WebView, String)
         //
-        // JavaScript fetch override — kills the initial pre-roll countdown ad.
-        //
-        // The SPA at ott-androidtv.tubitv.com makes an XHR/fetch call to
-        // rainmaker.production-public.tubi.io to fetch the VAST ad manifest.
-        // Hook 7 (shouldInterceptRequest) catches this for subsequent sessions
-        // but the very first request can slip through before the intercept
-        // layer is fully active.
-        //
-        // This hook fires after the SPA finishes loading (before any content
-        // is selected). It patches window.fetch in the SPA's JS execution
-        // context to intercept and nullify requests to ad orchestration
-        // endpoints. When the user later selects content and the SPA calls
-        // fetch("https://rainmaker..."), our override returns an empty
-        // Response(200) immediately — the SPA receives no ad manifest, never
-        // sets the <video> src, and no ad plays.
-        //
-        // Blocked in JS fetch layer:
-        //   rainmaker.production-public.tubi.io  (VAST manifest)
-        //   ads.production-public.tubi.io        (ad config)
-        //
-        // window.__tubiAdBlockInstalled guard prevents double-patching
-        // if onPageFinished fires multiple times.
-        //
-        // p1 = WebView (the evaluateJavascript target)
-        // Registers: v0 = JS string, v1 = null callback
+        // JavaScript fetch override injected into the SPA after page load.
+        // Intercepts fetch() calls to ad orchestration endpoints in JS context
+        // before they can initiate network requests.
         // ─────────────────────────────────────────────────────────────────────
         TubiWebClientPageFinishedFingerprint.method.addInstructions(
             0,
@@ -39,24 +141,13 @@
         // ─────────────────────────────────────────────────────────────────────
         // Hook 9 — qf/c.suspendGetAdBreaks(String, String, String, Map, Continuation)
         //
-        // NATIVE OKHTTP PRE-ROLL ROOT CAUSE — the final piece.
+        // NATIVE OKHTTP ROOT CAUSE — the final piece.
+        // R8-obfuscated RainmakerAdsFetcher.suspendGetAdBreaks() makes a direct
+        // OkHttp call to rainmaker.production-public.tubi.io — bypassing the
+        // WebView entirely. This is why the first pre-roll survived Hook 7.
         //
-        // This is the R8-obfuscated RainmakerAdsFetcher.suspendGetAdBreaks()
-        // implementation. It makes a direct OkHttp HTTP request to:
-        //   https://rainmaker.production-public.tubi.io/api/v2/rev/vod/ANDROID
-        //
-        // This call bypasses shouldInterceptRequest (WebView-only) entirely.
-        // Hook 7 caught subsequent WebView ad requests; this native call is why
-        // the FIRST pre-roll survived — it fires before the WebView is even active.
-        //
-        // Return the COROUTINE_SUSPENDED sentinel at index 0:
-        //   Lai/q; = R8-minified CoroutineSingletons
-        //   Lai/q;.a = COROUTINE_SUSPENDED field
-        //
-        // The coroutine caller suspends indefinitely. The ad manifest never
-        // arrives. Tubi's built-in timeout fires and content plays ad-free.
-        //
-        // No extension needed — pure smali, straight-line, no labels.
+        // Returns COROUTINE_SUSPENDED sentinel (Lai/q;.a) immediately.
+        // The ad manifest never arrives. Tubi's timeout fires, content plays.
         // ─────────────────────────────────────────────────────────────────────
         RainmakerSuspendGetAdBreaksFingerprint.method.addInstructions(
             0,
@@ -65,3 +156,5 @@
                 return-object v0
             """
         )
+    }
+}
