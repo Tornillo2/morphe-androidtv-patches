@@ -23,7 +23,6 @@ I'm just like you — I enjoy watching TV and movies without being bored and ann
 | 🟢 Tubi | `com.tubitv` | Working | `v10.20.5000` | 5/20/26 |
 | 🟢 ViX | `com.univision.prendetv` | Working | `v4.46.0_tv` | 5/19/26 |
 | 🔴 Paramount+ | `com.cbs.ott` | In Development | `v16.8 → v16.12` | — |
-| 🔴 Fox Sports | **Under Development** | — |
 | 🔴 Fox One | **Under Development** | — |
 | 🔴 MLB TV | **Under Development** | — |
 
