@@ -7,40 +7,39 @@ import ajstrick81.morphe.patches.foxsports.shared.Constants
 @Suppress("unused")
 val foxSportsSkipAdsPatch = bytecodePatch(
     name = "Skip ads",
-    description = "Suppresses all ad delivery systems in Fox Sports Android TV.",
+    description = "Suppresses all Yospace SSAI ad delivery in Fox Sports Android TV.",
 ) {
     compatibleWith(Constants.COMPATIBILITY)
 
     execute {
-        FoxImaAdEventListenerFingerprint.method.addInstructions(0, "return-void")
-        FoxImaAdsLoadedListenerFingerprint.method.addInstructions(0, "return-void")
-        FoxPlayerClearVodAdsFingerprint.method.addInstructions(
-            0,
-            """
-                const/4 v0, 0x0
-                iput-object v0, p0, Lcom/fox/android/video/player/FoxPlayer;->vodAds:Lcom/fox/android/video/player/args/StreamAds;
-                iput-object v0, p0, Lcom/fox/android/video/player/FoxPlayer;->vodAdMarkers:[J
-                iput-object v0, p0, Lcom/fox/android/video/player/FoxPlayer;->vodPlayedAdGroups:[Z
-            """
-        )
-        FoxImaVodStreamRequestFingerprint.method.addInstructions(
-            0,
-            """
-                const-string v0, "dai_blocked"
-                invoke-interface {p3, v0}, Lcom/fox/android/video/player/loaders/ImaStreamIdLoader${"$"}ImaStreamUrlCallback;->onFailure(Ljava/lang/String;)V
-                return-void
-            """
-        )
-        FoxImaLiveStreamRequestFingerprint.method.addInstructions(
-            0,
-            """
-                const-string v0, "dai_blocked"
-                invoke-interface {p3, v0}, Lcom/fox/android/video/player/loaders/ImaStreamIdLoader${"$"}ImaStreamIdCallback;->onFailure(Ljava/lang/String;)V
-                return-void
-            """
-        )
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Hook 1 — YospaceAnalyticEventObserver.dispatchAdEvent(FoxAdEvent)
+        //
+        // Fox Sports v5.152 has removed the Google IMA/DAI pipeline entirely.
+        // The previous patch had 8 hooks targeting FoxImaAdListeners,
+        // FoxImaStreamIdLoader, FoxPlayer.clearVodAds etc — none of those
+        // classes exist in this version. Yospace SSAI is now the sole ad system.
+        //
+        // Silences the Yospace ad event coroutine launcher at index 0.
+        // ─────────────────────────────────────────────────────────────────────
         YospaceDispatchAdEventFingerprint.method.addInstructions(0, "return-void")
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Hook 2 — YospaceAnalyticEventObserver.dispatchSlateEvent(FoxSlateEvent)
+        //
+        // Silences Yospace slate events (black screen placeholders during live
+        // ad breaks when no creative is available).
+        // ─────────────────────────────────────────────────────────────────────
         YospaceDispatchSlateEventFingerprint.method.addInstructions(0, "return-void")
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Hook 3 — YospaceSeekablePlaybackPolicyHandler.setHandleFastForwardSeek
+        //
+        // Nulls out Yospace's fast-forward seek policy. Without this, the player
+        // locks the scrub bar during ad breaks even when Hooks 1–2 prevent
+        // rendering. Seek policy enforcement is a separate code path.
+        // ─────────────────────────────────────────────────────────────────────
         YospaceSeekPolicyFingerprint.method.addInstructions(0, "return-void")
     }
 }
