@@ -104,5 +104,3 @@ object TubiWebClientPageFinishedFingerprint : Fingerprint(
     returnType = "V",
     accessFlags = listOf(AccessFlags.PUBLIC)
 )
-
-)
