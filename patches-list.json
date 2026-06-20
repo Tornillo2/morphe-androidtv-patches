@@ -1,5 +1,5 @@
 {
-  "version": "1.4.88",
+  "version": "1.4.89",
   "appNames": {
     "com.fox.foxone": "Fox One Android TV",
     "com.peacocktv.peacockandroid": "Peacock TV Android TV",
@@ -12,6 +12,32 @@
     "com.cbs.ott": "Paramount+ Android TV"
   },
   "patches": [
+    {
+      "name": "Disable auto-updates",
+      "description": "Prevents Google Play Store from automatically replacing the patched APK with the official unpatched version.",
+      "use": true,
+      "dependencies": [],
+      "compatiblePackages": {
+        "com.amazon.amazonvideo.livingroom": [
+          "6.23.23+v15.5.0.70-armv7a"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Prime Video Android TV",
+          "packageName": "com.amazon.amazonvideo.livingroom",
+          "description": null,
+          "appIconColor": 1539022,
+          "targets": [
+            {
+              "version": "6.23.23+v15.5.0.70-armv7a",
+              "experimental": false
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
     {
       "name": "Disney+ Android TV",
       "description": "Removes mid-roll / pre-roll ads and pause ads.",
@@ -93,6 +119,32 @@
           "targets": [
             {
               "version": "26.8.1.1",
+              "experimental": false
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Override certificate pinning",
+      "description": "Allows HTTPS traffic inspection tools like AdGuard Premium to intercept app connections. Enables consistent pre-roll suppression when used alongside AdGuard Premium.",
+      "use": true,
+      "dependencies": [],
+      "compatiblePackages": {
+        "com.amazon.amazonvideo.livingroom": [
+          "6.23.23+v15.5.0.70-armv7a"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Prime Video Android TV",
+          "packageName": "com.amazon.amazonvideo.livingroom",
+          "description": null,
+          "appIconColor": 1539022,
+          "targets": [
+            {
+              "version": "6.23.23+v15.5.0.70-armv7a",
               "experimental": false
             }
           ]

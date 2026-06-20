@@ -1,3 +1,11 @@
+## [1.4.89](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.88...v1.4.89) (2026-06-20)
+
+
+### Bug Fixes
+
+* Refactor SkipAdsPatch by removing unused hooks ([e1c3302](https://github.com/ajstrick81/morphe-androidtv-patches/commit/e1c3302bf7751b18a96df444ea3c7a5740fc04e7))
+* Remove unnecessary closing parentheses in Fingerprints.kt ([8f211f3](https://github.com/ajstrick81/morphe-androidtv-patches/commit/8f211f3c237f40f48280af5a332b4c63127bd558))
+
 ## [1.4.88](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.87...v1.4.88) (2026-06-20)
 
 
