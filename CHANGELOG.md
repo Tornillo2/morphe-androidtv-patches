@@ -1,3 +1,10 @@
+## [1.4.94](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.93...v1.4.94) (2026-06-21)
+
+
+### Bug Fixes
+
+* Refactor SkipAdsPatch documentation and remove seek method ([20cf0bd](https://github.com/ajstrick81/morphe-androidtv-patches/commit/20cf0bd5f59af60f09d85311fd50d49eb015a9b5))
+
 ## [1.4.93](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.92...v1.4.93) (2026-06-21)
 
 
