@@ -1,3 +1,10 @@
+## [1.4.91](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.90...v1.4.91) (2026-06-21)
+
+
+### Bug Fixes
+
+* Refactor URL blocking logic in PeacockWebViewHelper ([beac284](https://github.com/ajstrick81/morphe-androidtv-patches/commit/beac284f95904045745a59d94dfd26b8b1a4d524))
+
 ## [1.4.90](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.89...v1.4.90) (2026-06-21)
 
 
