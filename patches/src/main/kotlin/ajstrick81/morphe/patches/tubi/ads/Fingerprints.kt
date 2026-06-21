@@ -104,3 +104,25 @@ object TubiWebClientPageFinishedFingerprint : Fingerprint(
     returnType = "V",
     accessFlags = listOf(AccessFlags.PUBLIC)
 )
+
+// Hook 9 — qf/c.suspendGetAdBreaks(String, String, String, Map, Continuation)
+//
+// Rainmaker ad-break fetch coroutine. Confirmed via classes7.dex analysis:
+// returns Lwm/d; (sealed result wrapper) — Lwm/d$e for success, Lwm/d$b
+// subtypes (Lwm/d$c / Lwm/d$d) for error. The caller (Lpf/a;->c) branches
+// on instance-of Lwm/d$e vs Lwm/d$b and converges afterward either way,
+// so a synchronously-returned error result is sufficient — no suspension
+// needed.
+object QfcSuspendGetAdBreaksFingerprint : Fingerprint(
+    definingClass = "Lqf/c;",
+    name = "suspendGetAdBreaks",
+    parameters = listOf(
+        "Ljava/lang/String;",
+        "Ljava/lang/String;",
+        "Ljava/lang/String;",
+        "Ljava/util/Map;",
+        "Lkotlin/coroutines/Continuation;"
+    ),
+    returnType = "Ljava/lang/Object;",
+    accessFlags = listOf(AccessFlags.PUBLIC)
+)
