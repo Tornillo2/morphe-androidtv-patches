@@ -1,3 +1,10 @@
+## [1.4.95](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.94...v1.4.95) (2026-06-21)
+
+
+### Bug Fixes
+
+* Enhance logging for ad group stripping methods ([b1a7381](https://github.com/ajstrick81/morphe-androidtv-patches/commit/b1a7381761476bc7644d7527f11c6a18b0f8fde0))
+
 ## [1.4.94](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.93...v1.4.94) (2026-06-21)
 
 
