@@ -1,3 +1,13 @@
+## [1.4.97](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.96...v1.4.97) (2026-06-21)
+
+
+### Bug Fixes
+
+* Add extendWith call in SkipAdsPatch.kt ([f0abe0d](https://github.com/ajstrick81/morphe-androidtv-patches/commit/f0abe0d531c519426610de3c0e6b8bc25480c9da))
+* Update dependencies in build.gradle.kts ([be68275](https://github.com/ajstrick81/morphe-androidtv-patches/commit/be6827510874c3a39f05f86bd2c6c9d133b6e88b))
+* Update Gradle wrapper to version 9.5.0 ([7fbf2d7](https://github.com/ajstrick81/morphe-androidtv-patches/commit/7fbf2d7471ef75333df59ecf5483e6ac66bc2823))
+* Update Prime Video extension patch for merging DEX ([8a93773](https://github.com/ajstrick81/morphe-androidtv-patches/commit/8a93773fbff409f08929ff9e45022d66596e63be))
+
 ## [1.4.96](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.95...v1.4.96) (2026-06-21)
 
 
