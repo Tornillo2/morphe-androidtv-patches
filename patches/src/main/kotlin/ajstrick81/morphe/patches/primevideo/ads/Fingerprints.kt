@@ -33,34 +33,7 @@ object SetAdPlaybackStatesExo2Fingerprint : Fingerprint(
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tertiary target — ServerSideAdInsertionUtil.getStreamPositionUs(Player, AdPlaybackState)
-// classes2.dex / smali/androidx/media3/exoplayer/source/ads/
-//
-// Hoodles-inspired seek hook. Called during active ad playback with live
-// Player and AdPlaybackState references. When isPlayingAd() is true, seeks
-// the player past the current ad break duration.
-//
-// Covers the PromoPlaybackExperience path and any other ad delivery mechanism
-// that bypasses setAdPlaybackStates — operates during active playback
-// regardless of which delivery path initiated the ad.
-//
-// p0 = Player (interface: seekTo(J)V, isPlayingAd()Z,
-//              getCurrentAdGroupIndex()I, getCurrentPosition()J)
-// p1 = AdPlaybackState (getAdGroup(I) -> AdGroup with durationsUs:[J)
-// ─────────────────────────────────────────────────────────────────────────────
-object GetStreamPositionUsFingerprint : Fingerprint(
-    definingClass = "Landroidx/media3/exoplayer/source/ads/ServerSideAdInsertionUtil;",
-    name = "getStreamPositionUs",
-    parameters = listOf(
-        "Landroidx/media3/common/Player;",
-        "Landroidx/media3/common/AdPlaybackState;"
-    ),
-    returnType = "J",
-    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC)
-)
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Quaternary target — MetricsTransporter.transmit(SerializedBatch)
+// Tertiary target — MetricsTransporter.transmit(SerializedBatch)
 // classes2.dex / smali/com/amazon/minerva/client/thirdparty/transport/
 //
 // The Java-layer impression reporting pipeline that successfully uploads
