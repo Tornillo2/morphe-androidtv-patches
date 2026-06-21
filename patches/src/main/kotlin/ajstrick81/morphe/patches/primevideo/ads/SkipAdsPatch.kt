@@ -8,7 +8,7 @@ import ajstrick81.morphe.patches.primevideo.shared.Constants
 @Suppress("unused")
 val skipAdsPatch = bytecodePatch(
     name = "Skip ads",
-    description = "Multi-layer ad suppression targeting SSAI schedule, active ad playback, and impression reporting.",
+    description = "Multi-layer ad suppression targeting the SSAI schedule and impression reporting.",
 ) {
     compatibleWith(Constants.COMPATIBILITY)
 
@@ -44,28 +44,7 @@ val skipAdsPatch = bytecodePatch(
         )
 
         // ─────────────────────────────────────────────────────────────────────
-        // Hook 3 — ServerSideAdInsertionUtil.getStreamPositionUs(Player, AdPlaybackState)
-        //
-        // Hoodles-inspired seek hook. Fires during active ad playback with
-        // live Player and AdPlaybackState references. Seeks past current ad
-        // break duration when isPlayingAd() returns true.
-        //
-        // Covers PromoPlaybackExperience and any delivery path that bypasses
-        // setAdPlaybackStates — operates at the playback layer regardless of
-        // which WASM path initiated the ad.
-        //
-        // p0 = Player (live reference)
-        // p1 = AdPlaybackState (current ad timing data)
-        // ─────────────────────────────────────────────────────────────────────
-        GetStreamPositionUsFingerprint.method.addInstructions(
-            0,
-            """
-                invoke-static {p0, p1}, Lajstrick81/morphe/extension/primevideo/ads/SkipAdsPatch;->seekToAdBreakEnd(Landroidx/media3/common/Player;Landroidx/media3/common/AdPlaybackState;)V
-            """
-        )
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Hook 4 — MetricsTransporter.transmit(SerializedBatch)
+        // Hook 3 — MetricsTransporter.transmit(SerializedBatch)
         //
         // Returns a fake SUCCESS UploadResult without making any network
         // request. Amazon's ad server receives no impression delivery data,
