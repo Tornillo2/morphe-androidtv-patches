@@ -14,6 +14,12 @@ val skipAdsPatch = bytecodePatch(
 ) {
     compatibleWith(Constants.COMPATIBILITY)
 
+    // extendWith populates Patch.extensionInputStream — without this call the
+    // PeacockAdPatchHelper/PeacockWebViewHelper/AdBlockInterceptor classes
+    // referenced below via invoke-static never get merged into the patched
+    // APK's dex, even though the smali calling them assembles fine.
+    extendWith("extensions/extension.mpe")
+
     execute {
         // ── Layer 1 ─────────────────────────────────────────────────────────
         // Kill MediaTailor SSAI proxy — empty string prevents proxy URL
