@@ -1,5 +1,5 @@
 {
-  "version": "1.4.97",
+  "version": "1.4.98",
   "appNames": {
     "com.fox.foxone": "Fox One Android TV",
     "com.peacocktv.peacockandroid": "Peacock TV Android TV",
@@ -263,7 +263,7 @@
     },
     {
       "name": "Skip ads",
-      "description": "Multi-layer ad suppression targeting the SSAI schedule and impression reporting.",
+      "description": "Multi-layer ad suppression targeting the SSAI schedule, impression reporting, and the Volley network chokepoint.",
       "use": true,
       "dependencies": [
         "BytecodePatch"
