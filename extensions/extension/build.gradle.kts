@@ -20,4 +20,10 @@ dependencies {
     // app at runtime, only needed here to compile against.
     compileOnly("androidx.media3:media3-common:1.4.1")
     compileOnly("com.google.android.exoplayer:exoplayer-core:2.19.1")
+
+    // Prime Video has no OkHttp — its app-layer HTTP client is Volley
+    // (com.amazon.ignitionshared.network.VolleyModule -> BasicNetwork).
+    // Already bundled in the app at runtime, only needed here to compile
+    // SkipAdsPatch.enforceAdBlock's Request/NoConnectionError types.
+    compileOnly("com.android.volley:volley:1.2.1")
 }
