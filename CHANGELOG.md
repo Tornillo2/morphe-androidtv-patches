@@ -1,3 +1,10 @@
+## [1.4.103](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.102...v1.4.103) (2026-06-22)
+
+
+### Bug Fixes
+
+* push new version while Updating proguard rules to include enforceAdBlock ([54e320a](https://github.com/ajstrick81/morphe-androidtv-patches/commit/54e320ac7d5f325770a1a7b02fd72a74d3b8da02))
+
 ## [1.4.102](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.101...v1.4.102) (2026-06-22)
 
 
