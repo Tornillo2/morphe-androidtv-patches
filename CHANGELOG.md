@@ -1,3 +1,10 @@
+## [1.4.99](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.98...v1.4.99) (2026-06-22)
+
+
+### Bug Fixes
+
+* stale cache - force Update SkipAdsPatch.java ([55d678b](https://github.com/ajstrick81/morphe-androidtv-patches/commit/55d678b79b9216cc4536566a60a69c72bd58ba24))
+
 ## [1.4.98](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.97...v1.4.98) (2026-06-22)
 
 

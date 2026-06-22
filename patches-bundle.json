@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-06-22T01:45:14",
-  "description": "## [1.4.98](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.97...v1.4.98) (2026-06-22)\n\n\n### Bug Fixes\n\n* Implement ad blocking in Volley network layer ([9bc512b](https://github.com/ajstrick81/morphe-androidtv-patches/commit/9bc512b9d3e2b327b59171a3343dae706ad0f3fe))\n* push new version by Adding Volley dependency for Prime Video integration ([bc789ef](https://github.com/ajstrick81/morphe-androidtv-patches/commit/bc789ef5cae6bb72a4ce9b8390829abbeb72dc6b))",
-  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.98/patches-1.4.98.mpp",
+  "created_at": "2026-06-22T02:23:08",
+  "description": "## [1.4.99](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.98...v1.4.99) (2026-06-22)\n\n\n### Bug Fixes\n\n* stale cache - force Update SkipAdsPatch.java ([55d678b](https://github.com/ajstrick81/morphe-androidtv-patches/commit/55d678b79b9216cc4536566a60a69c72bd58ba24))",
+  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.99/patches-1.4.99.mpp",
   "signature_download_url": "",
-  "version": "1.4.98"
+  "version": "1.4.99"
 }
