@@ -11,6 +11,7 @@
     public static *** skipAllMedia3AdGroups(com.google.common.collect.ImmutableMap);
     public static *** skipAllExo2AdGroups(com.google.common.collect.ImmutableMap);
     public static *** seekToAdBreakEnd(androidx.media3.common.Player, androidx.media3.common.AdPlaybackState);
+    public static *** enforceAdBlock(com.android.volley.Request);
 }
 # Peacock — existing entry
 # emptyAdPlaybackState is called reflectively by the Sky SDK layer patches.
