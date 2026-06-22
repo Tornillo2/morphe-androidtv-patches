@@ -1,3 +1,10 @@
+## [1.4.100](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.99...v1.4.100) (2026-06-22)
+
+
+### Bug Fixes
+
+* gradlew clean: Reorder Gradle commands in release workflow ([8d93490](https://github.com/ajstrick81/morphe-androidtv-patches/commit/8d93490bae60ba7eb543fc41a451a3f3a3f7e391))
+
 ## [1.4.99](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.98...v1.4.99) (2026-06-22)
 
 
