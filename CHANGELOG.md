@@ -1,3 +1,10 @@
+## [1.4.102](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.101...v1.4.102) (2026-06-22)
+
+
+### Bug Fixes
+
+* push new version with Update Gradle job ID in release workflow ([2c014ff](https://github.com/ajstrick81/morphe-androidtv-patches/commit/2c014ff9876db633525baa7c9ba6b994b96a1df7))
+
 ## [1.4.101](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.100...v1.4.101) (2026-06-22)
 
 

@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-06-22T17:44:35",
-  "description": "## [1.4.101](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.100...v1.4.101) (2026-06-22)\n\n\n### Bug Fixes\n\n* push new version Update SkipAdsPatch.java ([cba3509](https://github.com/ajstrick81/morphe-androidtv-patches/commit/cba350941e1788d31ffb4c7d54c7fce2d0f12945))",
-  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.101/patches-1.4.101.mpp",
+  "created_at": "2026-06-22T17:55:45",
+  "description": "## [1.4.102](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.101...v1.4.102) (2026-06-22)\n\n\n### Bug Fixes\n\n* push new version with Update Gradle job ID in release workflow ([2c014ff](https://github.com/ajstrick81/morphe-androidtv-patches/commit/2c014ff9876db633525baa7c9ba6b994b96a1df7))",
+  "download_url": "https://github.com/ajstrick81/morphe-androidtv-patches/releases/download/v1.4.102/patches-1.4.102.mpp",
   "signature_download_url": "",
-  "version": "1.4.101"
+  "version": "1.4.102"
 }
