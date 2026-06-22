@@ -64,3 +64,37 @@ object MetricsTransporterTransmitFingerprint : Fingerprint(
     returnType = "Lcom/amazon/minerva/client/thirdparty/transport/UploadResult;",
     accessFlags = listOf(AccessFlags.PUBLIC)
 )
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hook 5 target — Volley network-layer chokepoint
+// classes2.dex / smali/com/android/volley/toolbox/
+//
+// Prime Video has NO OkHttp anywhere in its dex set (confirmed via exhaustive
+// search) — its app-layer HTTP client is Volley, wired up by Amazon's own
+// VolleyModule (com.amazon.ignitionshared.network.VolleyModule), which
+// constructs a HurlStack (HttpURLConnection-based) wrapped in BasicNetwork.
+//
+// BasicNetwork is the ONLY class implementing com.android.volley.Network in
+// the entire app (the library's AsyncNetwork is unused) and is directly
+// instantiated by VolleyModule with no app-specific subclass — confirmed via
+// disassembly of VolleyModule's Dagger factory methods. This makes
+// performRequest() the single, unavoidable chokepoint for every Volley
+// request: catalog/metadata APIs, the SSAI ad-decisioning ("sgai"/"draper")
+// call, and impression/metrics reporting.
+//
+// Distinct from Hooks 1–3: this is the control-plane HTTP layer, not the
+// media-plane data source. ExoPlayer/media3 fetches actual segments (incl.
+// mid-roll ad segments multiplexed onto the content CDN host) via its own
+// androidx.media3.datasource.DefaultHttpDataSource, which never touches
+// Volley — so this hook cannot suppress mid-roll ad segments, only requests
+// that go through Volley (ad decisioning + metrics + most app APIs).
+// ─────────────────────────────────────────────────────────────────────────────
+object BasicNetworkPerformRequestFingerprint : Fingerprint(
+    definingClass = "Lcom/android/volley/toolbox/BasicNetwork;",
+    name = "performRequest",
+    parameters = listOf(
+        "Lcom/android/volley/Request;"
+    ),
+    returnType = "Lcom/android/volley/NetworkResponse;",
+    accessFlags = listOf(AccessFlags.PUBLIC)
+)
