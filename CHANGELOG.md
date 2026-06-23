@@ -1,3 +1,10 @@
+## [1.4.105](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.104...v1.4.105) (2026-06-23)
+
+
+### Bug Fixes
+
+* Peacock Layer 7 constructor coverage + HBO Max 7.5.0.73 support ([#21](https://github.com/ajstrick81/morphe-androidtv-patches/issues/21)) ([b4e862a](https://github.com/ajstrick81/morphe-androidtv-patches/commit/b4e862af3b8e974d485c7e9634f08210ec52d647))
+
 ## [1.4.104](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.103...v1.4.104) (2026-06-22)
 
 
