@@ -1,3 +1,10 @@
+## [1.4.106](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.105...v1.4.106) (2026-06-23)
+
+
+### Bug Fixes
+
+* push new version with changes to Update Fingerprints.kt ([3775332](https://github.com/ajstrick81/morphe-androidtv-patches/commit/37753320a316f5e351a0cf5e628fc1ca29d06f39))
+
 ## [1.4.105](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.104...v1.4.105) (2026-06-23)
 
 
