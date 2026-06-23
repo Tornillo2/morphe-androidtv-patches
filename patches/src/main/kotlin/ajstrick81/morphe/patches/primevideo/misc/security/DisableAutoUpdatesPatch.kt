@@ -18,10 +18,6 @@ import ajstrick81.morphe.patches.primevideo.shared.Constants
 //   AndroidManifest.xml. This is the standard attribute that signals to
 //   the Play Store that this app should not be automatically updated.
 //
-//   Also removes the android.intent.action.PACKAGE_REPLACED receiver
-//   from the manifest if present, which is one of the mechanisms Play
-//   Store uses to trigger update flows.
-//
 // Note: Manual updates via the Play Store UI will still work — this only
 // disables automatic background updates. To update the patched APK,
 // users need to download a new version and re-patch it manually via Morphe.
