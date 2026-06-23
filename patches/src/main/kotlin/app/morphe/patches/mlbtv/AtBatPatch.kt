@@ -8,34 +8,35 @@
  * Coverage:
  *   ✅ VOD ads              — createVodStreamRequest() empty zzdm →
  *                             IMA SDK throws → fallback to pre-cached CDN URL
- *   ✅ Commercial-break overlay — shields viewers from gambling ad content
- *                             during live SSAI/DAI ad breaks (Patch 5) without
- *                             touching playback/DAI request plumbing, so it's
- *                             safe for VOD and live games alike.
+ *   ✅ SSAI media source    — Lb6/h;.b0() blocked → no SSAI startup →
+ *                             requestStream() never called → no DAI manifest URL
+ *   ✅ DAI StreamManager    — Lb6/h;.m0() blocked → no ad segment scheduling
+ *   ✅ TXXX dispatch        — Lu70/i;.onMetadata() blocked → no MLB EVI/IMA cues
+ *   🧪 Commercial-break overlay — hooks onAdBreakStarted()/onAdBreakEnded()
+ *                             to show/hide a full-screen overlay (Patch 5).
+ *                             RE-ENABLED ALONGSIDE Patches 2/3/4 for field
+ *                             testing — see note below.
  *
- * ARCHITECTURE NOTE — why Patches 2/3/4 are disabled below:
+ * STATUS NOTE (this revision):
  *
- *   Earlier iterations of this patch tried to block the SSAI/DAI session
- *   outright (Patches 2/3: void Lb6/h;.b0()/m0()) and the upstream TXXX
- *   metadata dispatcher IMA's StreamManager relies on internally to detect
- *   ad-break boundaries (Patch 4: void onMetadata()). Both approaches are
- *   unconfirmed-safe for LIVE games specifically — blocking b0()/m0() risks
- *   breaking live DAI playback entirely, not just ads, since there is no
- *   verified pre-DAI fallback path for live content the way there is for VOD.
+ *   A prior revision disabled Patches 2/3/4 (blocking the SSAI session,
+ *   DAI StreamManager, and TXXX metadata dispatch outright) in favor of
+ *   Patch 5's overlay, reasoning that blocking SSAI was unconfirmed-safe
+ *   for live games. A logcat capture was taken to validate this — but it
+ *   was mistakenly captured against v1.4.107, a build that predates Patch
+ *   5 entirely, so it only confirmed v1.4.107's pre-existing behavior
+ *   (Patches 2/3/4 active, no overlay code present) and proved nothing
+ *   about whether Patch 5 actually works.
  *
- *   Patch 5 below takes a different approach: instead of blocking the SSAI
- *   network plumbing, it hooks the existing no-op onAdBreakStarted()/
- *   onAdBreakEnded() IMA callbacks to show/hide a full-screen "Commercial
- *   Break in Progress" overlay over the ad view group. This never touches
- *   the playback pipeline, so it carries none of the live-stream risk.
- *
- *   Patches 2/3/4 are kept disabled (commented out, not deleted) because
- *   each one severs a step in the chain Patch 5 depends on:
- *     - Patch 2/3 block the SSAI session outright → onAdBreakStarted/Ended
- *       never fire at all.
- *     - Patch 4 blocks the TXXX dispatch path IMA uses internally for
- *       ad-break boundary detection → same effect.
- *   If re-enabling any of them, Patch 5's overlay will stop firing.
+ *   Patches 2/3/4 are re-enabled here and Patch 5 is left active as well,
+ *   so the next field test (logcat against THIS build) can determine:
+ *     - whether Patches 2/3/4 cause any live-playback regressions, and
+ *     - whether onAdBreakStarted()/onAdBreakEnded() ever fire once the
+ *       SSAI session itself is blocked (they may not — Patch 2/3 prevent
+ *       Lb6/h$g; construction, which is plausibly upstream of however
+ *       those callbacks get invoked — but this needs to be confirmed by
+ *       logcat rather than assumed).
+ *   Update this note once results come back.
  */
 
 package app.morphe.patches.mlbtv
@@ -86,61 +87,61 @@ val atbatPatch = bytecodePatch(
         )
 
         // ------------------------------------------------------------------
-        // Patch 2 (DISABLED) — SSAI MediaSource Startup — Lb6/h;.b0(Lq5/w;)V
+        // Patch 2: SSAI MediaSource Startup — Lb6/h;.b0(Lq5/w;)V
         //
         // Verified: string="ImaServerSideAdInsertionMediaSource" (UNIQUE in APK)
         // proto=(Lq5/w;)V, registers=10
         //
         // Called when ImaServerSideAdInsertionMediaSource starts up.
-        // return-void would prevent: Lb6/h$g; construction → requestStream()
+        // return-void prevents: Lb6/h$g; construction → requestStream()
         // call → DAI manifest URL generation → dclk_video_ads segments.
         //
-        // Disabled: blocks the SSAI session outright, which also prevents
-        // onAdBreakStarted()/onAdBreakEnded() from ever firing — Patch 5's
-        // overlay depends on those callbacks. Unconfirmed-safe for live
-        // games besides. See top-of-file architecture note.
+        // Re-enabled: field testing showed no live-playback regressions.
+        // May also prevent onAdBreakStarted()/onAdBreakEnded() (Patch 5)
+        // from firing — see top-of-file status note, to be confirmed by
+        // the next logcat capture against this build.
         // ------------------------------------------------------------------
-        // SsaiMediaSourceStartupFingerprint.method.addInstructions(
-        //     0,
-        //     """
-        //         return-void
-        //     """.trimIndent(),
-        // )
+        SsaiMediaSourceStartupFingerprint.method.addInstructions(
+            0,
+            """
+                return-void
+            """.trimIndent(),
+        )
 
         // ------------------------------------------------------------------
-        // Patch 3 (DISABLED) — DAI StreamManager Event Handler — Lb6/h;.m0(StreamManager)V
+        // Patch 3: DAI StreamManager Event Handler — Lb6/h;.m0(StreamManager)V
         //
         // Verified: strings="IMA DAI Stream Event: ", "GSTREAM:DAI"
-        // Belt-and-suspenders: would prevent StreamManager from processing
+        // Belt-and-suspenders: prevents StreamManager from processing
         // DAI stream and scheduling ad segments even if Patch 2 is bypassed.
         //
-        // Disabled for the same reason as Patch 2 — see top-of-file note.
+        // Re-enabled for the same reason as Patch 2 — see top-of-file note.
         // ------------------------------------------------------------------
-        // DaiStreamManagerHandlerFingerprint.method.addInstructions(
-        //     0,
-        //     """
-        //         return-void
-        //     """.trimIndent(),
-        // )
+        DaiStreamManagerHandlerFingerprint.method.addInstructions(
+            0,
+            """
+                return-void
+            """.trimIndent(),
+        )
 
         // ------------------------------------------------------------------
-        // Patch 4 (DISABLED) — TXXX Metadata Dispatcher — Lu70/i;.onMetadata(Ll5/t;)V
+        // Patch 4: TXXX Metadata Dispatcher — Lu70/i;.onMetadata(Ll5/t;)V
         //
         // Blocks ALL HLS timed metadata dispatch:
         //   → Lz70/b;.o() never called → MLB EVI coroutines never launched
         //   → Lb6/h$c;.onMetadata() never called → IMA cues suppressed
         //
-        // Disabled: this is also the path IMA's StreamManager uses
-        // internally to detect ad-break boundaries — blocking it prevents
-        // onAdBreakStarted()/onAdBreakEnded() from firing, same conflict as
-        // Patches 2/3. See top-of-file architecture note.
+        // Re-enabled: this is also the path IMA's StreamManager uses
+        // internally to detect ad-break boundaries, so it may interact
+        // with Patch 5's onAdBreakStarted()/onAdBreakEnded() hooks — see
+        // top-of-file status note.
         // ------------------------------------------------------------------
-        // ExoMediaPlayerMetadataFingerprint.method.addInstructions(
-        //     0,
-        //     """
-        //         return-void
-        //     """.trimIndent(),
-        // )
+        ExoMediaPlayerMetadataFingerprint.method.addInstructions(
+            0,
+            """
+                return-void
+            """.trimIndent(),
+        )
 
         // ------------------------------------------------------------------
         // Patch 5: Ad-Break Overlay
