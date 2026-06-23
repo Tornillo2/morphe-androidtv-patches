@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.5.0...v1.5.1) (2026-06-23)
+
+
+### Bug Fixes
+
+* **mlbtv:** re-enable SSAI/DAI/TXXX blocking patches alongside overlay ([4cfcf7c](https://github.com/ajstrick81/morphe-androidtv-patches/commit/4cfcf7c4b3a22a1352e87f25a250ee05c8f5d0a3))
+
 # [1.5.0](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.107...v1.5.0) (2026-06-23)
 
 
