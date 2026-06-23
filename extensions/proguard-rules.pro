@@ -13,6 +13,11 @@
     public static *** seekToAdBreakEnd(androidx.media3.common.Player, androidx.media3.common.AdPlaybackState);
     public static *** enforceAdBlock(com.android.volley.Request);
 }
+# Prime Video — GMB send-direction diagnostic (debug-only, see gmb package)
+# logGMBSend is called directly from patched smali via invoke-static.
+-keep class ajstrick81.morphe.extension.primevideo.gmb.SendDiagnosticPatch {
+    public static *** logGMBSend(java.lang.String, java.lang.String);
+}
 # Peacock — existing entry
 # emptyAdPlaybackState is called reflectively by the Sky SDK layer patches.
 -keep class ajstrick81.morphe.extension.peacock.ads.SkipAdsPatch {
