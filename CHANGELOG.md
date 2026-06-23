@@ -1,3 +1,10 @@
+## [1.4.107](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.106...v1.4.107) (2026-06-23)
+
+
+### Bug Fixes
+
+* **primevideo:** replace non-existent allowAutoUpdates attribute with versionCode bump ([e758753](https://github.com/ajstrick81/morphe-androidtv-patches/commit/e75875319b5831a3da95b6d30758b47934020a29))
+
 ## [1.4.106](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.105...v1.4.106) (2026-06-23)
 
 
