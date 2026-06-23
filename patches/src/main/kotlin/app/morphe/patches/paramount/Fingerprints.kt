@@ -2,8 +2,8 @@
  * Paramount+ Android TV — Ad Patch Fingerprints
  *
  * Validated against:
- *   v16.8.0  (versionCode 520000464) — com.cbs.ott  [original]
- *   v16.12.0 (versionCode 520000571) — com.cbs.ott  [adds OnAdErrorFingerprint]
+ *   v16.8.0  (versionCode 520000464) — com.cbs.ott
+ *   v16.12.0 (versionCode 520000571) — com.cbs.ott
  *
  * AD SUPPRESSION MECHANISM (confirmed via APK analysis of v16.8.0 and v16.12.0):
  *
@@ -14,27 +14,15 @@
  *   For live TV:  no pre-DAI content URL exists → fallback media source is null.
  *
  *   STRATEGY: return an empty (but non-null) zzcx StreamRequest from
- *   createVodStreamRequest(). This is unchanged and still required.
- *
- * v16.12.0 REGRESSION (new in this build, root cause of the infinite spinner):
- *
- *   The bundled IMA SDK's zzah.requestStream() no longer synchronously throws
- *   on an empty/invalid StreamRequest — it either re-dispatches a cached
- *   AdErrorEvent or posts the request to an async Executor, and reports
- *   success/failure later via the registered AdErrorListener/AdsLoadedListener
- *   (Lcl0; in v16.12, registered in Lyk0;->run()).
- *
- *   Lcl0;->onAdError(AdErrorEvent) — the callback that is supposed to forward
- *   the failure into the AVIA fallback path (Ln1;->t0(Boolean, Lml0)) — only
- *   does so when AdError.getErrorType() is LOAD or PLAY. Any other error
- *   category (which is what the empty StreamRequest now triggers under the
- *   v16.12 IMA SDK's async validation) falls through to a silent return-void.
- *   The fallback (nm0.c / direct cbsaavideo.com playback) never fires →
- *   infinite spinner, no content.
- *
- *   FIX: patch onAdError() to forward ALL error types unconditionally to
- *   Ln1;->t0(), restoring the v16.8.0 behavior where any DAI failure reliably
- *   triggers the AVIA fallback.
+ *   createVodStreamRequest(). The bundled IMA SDK's zzah.requestStream()
+ *   never throws synchronously on an empty/invalid StreamRequest in either
+ *   version — it reports the failure later via the registered
+ *   AdErrorListener (Luk0; in v16.8.0 / Lcl0; in v16.12.0). That listener's
+ *   onAdError(AdErrorEvent) only forwards to the AVIA fallback path
+ *   (Ln1;->t0(Boolean, Lml0)) when AdError.getErrorType() is LOAD or PLAY —
+ *   but the SDK's own async failure path (zzq.zza(Throwable)) always
+ *   classifies this failure as AdErrorType.LOAD, so the unmodified filter
+ *   already forwards it. No changes to onAdError() are needed.
  */
 
 package app.morphe.patches.paramount
@@ -75,27 +63,6 @@ internal object VodStreamRequest4ArgFingerprint : Fingerprint(
                 "Lcom/google/ads/interactivemedia/v3/api/ImaSdkFactory;" &&
             method.parameterTypes.size == 4 &&
             method.parameterTypes.all { it == "Ljava/lang/String;" }
-    },
-)
-
-// ---------------------------------------------------------------------------
-// Patch 1c: NEW (v16.12.0) — AdErrorEvent.AdErrorListener.onAdError()
-//
-// Anchored on the app's own literal "DAI Ad Error '" string, used when
-// building the StringBuilder message passed into the Lml0 error wrapper.
-// This string is app-authored (not part of the IMA SDK), so it survives
-// IMA SDK updates and obfuscated-class renaming (the implementing class was
-// Lcl0; in v16.12.0 but the name is not load-bearing for the fingerprint).
-// ---------------------------------------------------------------------------
-
-internal object OnAdErrorFingerprint : Fingerprint(
-    returnType = "V",
-    strings = listOf("DAI Ad Error '"),
-    custom = { method, _ ->
-        method.name == "onAdError" &&
-            method.parameterTypes.size == 1 &&
-            method.parameterTypes[0] ==
-                "Lcom/google/ads/interactivemedia/v3/api/AdErrorEvent;"
     },
 )
 
