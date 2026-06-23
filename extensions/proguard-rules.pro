@@ -38,3 +38,11 @@
 -keep class ajstrick81.morphe.extension.peacock.ads.PeacockWebViewHelper {
     public static android.webkit.WebViewClient wrapClient(android.webkit.WebViewClient);
 }
+
+# MLB At Bat — ad-break overlay helper. Called directly from injected smali
+# via invoke-static {} in Lb6/h$d;.b(), Lb6/h$i;.onAdBreakStarted()/onAdBreakEnded().
+-keep class ajstrick81.morphe.extension.mlbtv.ads.AdBreakOverlayHelper {
+    public static void registerAdViewGroup(android.view.ViewGroup);
+    public static void showOverlay();
+    public static void hideOverlay();
+}
