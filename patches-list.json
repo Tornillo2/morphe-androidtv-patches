@@ -1,5 +1,5 @@
 {
-  "version": "1.4.107",
+  "version": "1.5.0",
   "appNames": {
     "com.fox.foxone": "Fox One Android TV",
     "com.peacocktv.peacockandroid": "Peacock TV Android TV",
@@ -107,7 +107,7 @@
     },
     {
       "name": "MLB At Bat Android TV",
-      "description": "Removes VOD ads and between-innings gambling ads while preserving live game playback.",
+      "description": "Removes VOD ads and shows a commercial-break overlay over live gambling ads while preserving live game playback.",
       "use": true,
       "dependencies": [],
       "compatiblePackages": {

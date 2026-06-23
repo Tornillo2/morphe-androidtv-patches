@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.107...v1.5.0) (2026-06-23)
+
+
+### Features
+
+* replace MLB At Bat SSAI/DAI blocking with ad-break overlay ([adc3d3f](https://github.com/ajstrick81/morphe-androidtv-patches/commit/adc3d3fa802a43c494e487e28472a0c40a26899b))
+
 ## [1.4.107](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.106...v1.4.107) (2026-06-23)
 
 
