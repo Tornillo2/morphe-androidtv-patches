@@ -10,7 +10,6 @@
 -keep class ajstrick81.morphe.extension.primevideo.ads.SkipAdsPatch {
     public static *** skipAllMedia3AdGroups(com.google.common.collect.ImmutableMap);
     public static *** skipAllExo2AdGroups(com.google.common.collect.ImmutableMap);
-    public static *** seekToAdBreakEnd(androidx.media3.common.Player, androidx.media3.common.AdPlaybackState);
     public static *** enforceAdBlock(com.android.volley.Request);
 }
 # Prime Video — GMB send-direction diagnostic (debug-only, see gmb package)
