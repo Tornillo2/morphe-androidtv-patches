@@ -53,3 +53,38 @@ object InnovidStartAdFingerprint : Fingerprint(
     returnType = "V",
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL)
 )
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LuraPlayer ad-break scheduler — linear (client-side VAST/VMAP) ad trigger
+// classes6.dex / com/akta/luraplayer/implementations/ads/analyzers/
+//
+// The abstract base analyzer's TIME_UPDATED handler is the single entry point
+// that decides when a linear ad break fires. On every time update it dispatches
+// to the VOD subclass's per-tick evaluator (l(J)), which launches the
+// LuraVodAdAnalyzer coroutine that locates the due break and plays it, or to
+// the live subclass for SGAI/DASH timing. Returning void at index 0 stops the
+// VOD client-side ad-break evaluation at its root, so no VAST creative is
+// requested or played. Content playback is unaffected — the analyzer is an
+// event subscriber, separate from the media pipeline.
+//
+// ViX uses provider = "generic" (client-side VAST), so the ad creative is a
+// separate playback the analyzer triggers; cutting the trigger removes the ad.
+// (Live SGAI ads are server-stitched into the manifest and are NOT removable
+// from the client — that requires a network/manifest-layer block.)
+//
+// Robustness: both the analyzer class and method names are R8-obfuscated
+// single letters, so they are NOT matched on. The handler is pinned by its
+// parameter type — Lcom/akta/luraplayer/api/event/LuraEventData$TimeUpdate; —
+// which lives in LuraPlayer's un-obfuscated public `api` package and is a
+// stable anchor. This method (taking exactly that single param, returning V)
+// is unique across the entire analyzers package.
+// ─────────────────────────────────────────────────────────────────────────────
+object LuraAdBreakSchedulerFingerprint : Fingerprint(
+    custom = { method, classDef ->
+        classDef.type.startsWith("Lcom/akta/luraplayer/implementations/ads/analyzers/") &&
+            method.returnType == "V" &&
+            method.parameters.size == 1 &&
+            method.parameters[0].type ==
+            "Lcom/akta/luraplayer/api/event/LuraEventData\$TimeUpdate;"
+    }
+)

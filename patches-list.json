@@ -327,7 +327,7 @@
     },
     {
       "name": "Skip ads",
-      "description": "Suppresses ViX ad delivery by preventing the Innovid SSAI ad overlay from mounting in the player.",
+      "description": "Suppresses ViX ad delivery by stopping the LuraPlayer linear ad-break scheduler (client-side VAST) and preventing the Innovid SSAI ad overlay from mounting.",
       "use": true,
       "dependencies": [],
       "compatiblePackages": {

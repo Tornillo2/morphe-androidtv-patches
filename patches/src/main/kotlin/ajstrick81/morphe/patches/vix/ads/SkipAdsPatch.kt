@@ -7,15 +7,32 @@ import ajstrick81.morphe.patches.vix.shared.Constants
 @Suppress("unused")
 val skipAdsPatch = bytecodePatch(
     name = "Skip ads",
-    description = "Suppresses ViX ad delivery by preventing the Innovid SSAI ad overlay from " +
-        "mounting in the player.",
+    description = "Suppresses ViX ad delivery by stopping the LuraPlayer linear ad-break " +
+        "scheduler (client-side VAST) and preventing the Innovid SSAI ad overlay from mounting.",
 ) {
     compatibleWith(Constants.COMPATIBILITY)
 
     execute {
 
         // ─────────────────────────────────────────────────────────────────────
-        // InnovidHelper.h(boolean, WebView, VideoModel, Flow)
+        // Hook 1 — LuraPlayer ad-break scheduler (TIME_UPDATED handler)
+        //
+        // The base ad analyzer's per-tick handler decides when a linear ad
+        // break fires; for VOD it launches the LuraVodAdAnalyzer coroutine that
+        // plays the due break. Returning void stops client-side (provider
+        // "generic" VAST/VMAP) linear ads at the root, without touching the
+        // media pipeline. (Live SGAI ads are server-stitched and need a
+        // network/manifest-layer block, out of scope here.)
+        // ─────────────────────────────────────────────────────────────────────
+        LuraAdBreakSchedulerFingerprint.method.addInstructions(
+            0,
+            """
+                return-void
+            """
+        )
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Hook 2 — InnovidHelper.h(boolean, WebView, VideoModel, Flow)
         //
         // The entry point that mounts the Innovid SSAI ad WebView overlay
         // (carries the "innovidAd" model; dispatched from the player's
