@@ -43,7 +43,9 @@ import java.util.Map;
  * wrapped in BasicNetwork — the sole implementation of Volley's Network
  * interface in the app, with no app-specific subclass. enforceAdBlock()
  * runs at the top of BasicNetwork.performRequest(Request) and rejects
- * known ad-decisioning/ad-tracking hosts before any HTTP work happens.
+ * known ad-decisioning/ad-tracking hosts, plus the getVideoAds path on
+ * the dual-use atv-ps.amazon.com playback host, before any HTTP work
+ * happens.
  *
  * Throwing a real NoConnectionError (rather than faking a successful
  * response) matters: Volley's own RetryPolicy/NetworkDispatcher already
@@ -146,6 +148,24 @@ public class SkipAdsPatch {
         try {
             String url = request.getUrl();
             if (url == null) return;
+
+            // Ad decisioning is a PATH on the dual-use playback host
+            // atv-ps.amazon.com, which also serves Widevine licensing and
+            // session/playback APIs — never block the host itself, only this
+            // path. Confirmed via PC capture: getVideoAds is the exact call
+            // gating preroll ad markers; an external filter blocking it at
+            // the DNS level (without a path-scoped client-side fallback)
+            // produced a 5-10s player stall instead of a clean skip, since
+            // the app's own retry/backoff still waited on a response that
+            // could never arrive. Throwing NoConnectionError here is the
+            // same fail-fast contract as the host-based blocks below, so the
+            // app's ad-loading state machine resolves immediately instead
+            // of timing out.
+            if (url.contains("/cdp/getVideoAds")) {
+                Log.i(TAG, "enforceAdBlock: blocking getVideoAds (ad decisioning)");
+                throw new NoConnectionError(new IOException("ads_blocked: getVideoAds"));
+            }
+
             String host = new URI(url).getHost();
             if (host == null) return;
             host = host.toLowerCase();
