@@ -8,7 +8,7 @@
 
 ## ❓ About
 
-I'm just like you — I enjoy watching TV and movies without being bored and annoyed to death by ads. I'll try to keep this repo updated when I can. I only do it for fun.
+I'm just like you — I enjoy watching TV and movies without being bored and annoyed to death by ads. I'll try to keep this repo updated when I can. I only do it for fun and I'm trying my best to make your viewing experience as enjoyable as possible :)
 
 ---
 
@@ -58,7 +58,7 @@ All patches follow the same general workflow using **Morphe Manager**:
 
 1. Go to [apkmirror.com](https://www.apkmirror.com) and search for:
    ```
-   HBO Max v7.2.0.41 (Android TV)
+   HBO Max v7.5.0.73 (Android TV)
    ```
 2. Download the `.apkm` file
 3. Select it in Morphe Manager
