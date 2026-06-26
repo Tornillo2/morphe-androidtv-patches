@@ -133,7 +133,7 @@
     },
     {
       "name": "Override certificate pinning",
-      "description": "Allows HTTPS traffic inspection tools like AdGuard Premium to intercept app connections. Enables consistent pre-roll suppression when used alongside AdGuard Premium.",
+      "description": "Adds a network_security_config trusting user CAs (no pin sets) so AdGuard Premium can inspect the app's platform-stack HTTPS. Optional adjunct: Prime Video's ad plane is largely native libcurl, so DNS blocking is the primary tool.",
       "use": true,
       "dependencies": [],
       "compatiblePackages": {
