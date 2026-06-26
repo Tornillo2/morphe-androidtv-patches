@@ -21,8 +21,9 @@ val skipAdsPatch = bytecodePatch(
         // break fires; for VOD it launches the LuraVodAdAnalyzer coroutine that
         // plays the due break. Returning void stops client-side (provider
         // "generic" VAST/VMAP) linear ads at the root, without touching the
-        // media pipeline. (Live SGAI ads are server-stitched and need a
-        // network/manifest-layer block, out of scope here.)
+        // media pipeline. (Live SSAI ads are Google DAI Pod Serving, stitched
+        // server-side and out of scope for bytecode — see the "Override
+        // certificate pinning" patch and adguard/vix_ssai_v1_0_agp.txt.)
         // ─────────────────────────────────────────────────────────────────────
         LuraAdBreakSchedulerFingerprint.method.addInstructions(
             0,

@@ -6,13 +6,18 @@ import ajstrick81.morphe.patches.vix.shared.Constants
 // ─────────────────────────────────────────────────────────────────────────────
 // Certificate Pinning Override (ViX Android TV)
 //
-// Companion to the AdGuard/AGP SSAI ruleset. ViX live ads are Lura server-side
-// stitched (SSAI) and decisioned through client-built Google GAM calls — they
-// cannot be removed by a bytecode hook, only at the network layer. But apps
-// targeting API 24+ only trust SYSTEM CAs by default, so an HTTPS-inspection
-// proxy's user-installed CA is rejected and the proxy never sees ViX traffic.
-// This patch makes ViX trust user CAs so AdGuard (or mitmproxy) can intercept
-// and apply manifest/segment/GAM rules.
+// Companion to the AdGuard/AGP SSAI ruleset (see adguard/vix_ssai_v1_0_agp.txt).
+// ViX live ads are server-side stitched (true SSAI) via Google DAI Pod Serving,
+// relayed through Lura (dcs4-live.mp.lura.live/server/podserve2/...). The
+// stream is decisioned by a DAI session call (dai.google.com/ssai/pods/...)
+// that the player makes before requesting the manifest — block that call and
+// Lura falls back to a content-only manifest (confirmed via HAR capture: the
+// fallback uses gam_stream_id=mock-stream with no playback disruption). None
+// of this is reachable by a bytecode hook, only at the network layer. But
+// apps targeting API 24+ only trust SYSTEM CAs by default, so an
+// HTTPS-inspection proxy's user-installed CA is rejected and the proxy never
+// sees ViX traffic. This patch makes ViX trust user CAs so AdGuard (or
+// mitmproxy) can see and block the DAI session call.
 //
 // What this creates / changes:
 //   res/xml/network_security_config.xml:
@@ -33,8 +38,10 @@ import ajstrick81.morphe.patches.vix.shared.Constants
 //     that network_security_config does NOT override. That is intentional and
 //     fine: PerimeterX is bot-defense for login, NOT the video/ad path, and the
 //     SSAI ruleset deliberately avoids MITM-ing it (do not intercept PX, or you
-//     risk lockouts). The video/ad hosts (*.mp.lura.live, GAM/IMA) are NOT
-//     pinned in code, so user-CA trust is sufficient for them.
+//     risk lockouts; confirmed present in the HAR as collector-*.pxchk.net /
+//     px-cdn.net / px-cloud.net). The video/ad hosts (dai.google.com,
+//     pubads.g.doubleclick.net, *.mp.lura.live) are NOT pinned in code, so
+//     user-CA trust is sufficient for AdGuard to see and block them.
 //   - cleartextTrafficPermitted stays false — AdGuard inspection is still TLS.
 //
 // This patch is optional and independent of the Skip ads patch. It only has an
