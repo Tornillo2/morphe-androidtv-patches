@@ -17,11 +17,11 @@ I'm just like you — I enjoy watching TV and movies without being bored and ann
 | App | Package | Status | Tested Version | Date |
 |-----|---------|--------|---------------|------|
 | 🟢 Disney+ | `com.disney.disneyplus` | Working | `26.9.2+rc1-2026.06.12` | 6/17/26 |
-| 🟢 Prime Video | `com.amazon.amazonvideo.livingroom` | Working - [Use with DNS filters](dns/README.md) | `6.23.23+v15.5.0.70-armv7a` | 6/18/26 |
+| 🟢 Prime Video | `com.amazon.amazonvideo.livingroom` | Working - [Use with DNS filters](dns/README.md) | `6.23.23+v15.5.0.70-armv7a` | 6/26/26 |
 | 🟢 HBO Max | `com.wbd.hbomax` | Working | `v7.5.0.73` | 6/22/26 |
 | 🟢 Peacock | `com.peacocktv.peacockandroid` | Working - [Use with DNS filters:](https://github.com/ajstrick81/Peacock-Ads) | `v7.5.102` | 6/13/26 |
 | 🟢 Tubi | `com.tubitv` | Working | `v10.20.5000` | 5/20/26 |
-| 🟢 ViX | `com.univision.prendetv` | Working | `v4.46.0_tv` | 5/19/26 |
+| 🟢 ViX | `com.univision.prendetv` | Working | `v4.46.0_tv` | 6/26/26 |
 | 🔴 Paramount+ | `com.cbs.ott` | In Development | `v16.8 → v16.12` | — |
 | 🔴 Fox One | **Under Development** | — |
 | 🔴 MLB TV | **Under Development** | — |
