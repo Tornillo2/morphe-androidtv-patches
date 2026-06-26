@@ -1,3 +1,22 @@
+# [1.6.0](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.5.7...v1.6.0) (2026-06-26)
+
+
+### Bug Fixes
+
+* **vix:** retarget Innovid hook to mount method, drop broken FreeWheel hook ([33cefba](https://github.com/ajstrick81/morphe-androidtv-patches/commit/33cefba404703be7f7da0cf02c25e8f3aab63206))
+
+
+### Features
+
+* add GMB send-direction diagnostic patch (debug-only) ([b0552cb](https://github.com/ajstrick81/morphe-androidtv-patches/commit/b0552cb7f84a74b455bef5473b781328164c5fae))
+* **primevideo dns:** v4.2 — add hercule trigger after live-session validation ([82c94cd](https://github.com/ajstrick81/morphe-androidtv-patches/commit/82c94cd445750966a73aad2e8d3e2efe1a8898c1))
+* **primevideo dns:** v4.3 — optional general-tracker section (triaged) ([4182df0](https://github.com/ajstrick81/morphe-androidtv-patches/commit/4182df0c6594e966a596f49516b99a17c6b037e1))
+* **primevideo:** add evidence-graded DNS ad-suppression list (dual-layer) ([c55bb0e](https://github.com/ajstrick81/morphe-androidtv-patches/commit/c55bb0e1e10ee82529a5b5102987c24b02f0582d))
+* **primevideo:** block getVideoAds path on dual-use playback host ([940b91a](https://github.com/ajstrick81/morphe-androidtv-patches/commit/940b91aff4a56a347e44eaf498d7351dfb8f3cdd))
+* **primevideo:** expand Volley ad-host block list from v3.6 session diff ([6f05cb5](https://github.com/ajstrick81/morphe-androidtv-patches/commit/6f05cb5a9922a24f9f50759083287ee571895f9e))
+* **vix:** add "Override certificate pinning" companion patch ([1fcdccf](https://github.com/ajstrick81/morphe-androidtv-patches/commit/1fcdccf651d01cc1ee9e3ba2ddf45154b796fc1a))
+* **vix:** block LuraPlayer linear (client-side VAST) ad-break scheduler ([1360354](https://github.com/ajstrick81/morphe-androidtv-patches/commit/1360354a9275a2fbcd1d363114876c5e9bef6c04))
+
 ## [1.5.7](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.5.6...v1.5.7) (2026-06-26)
 
 
