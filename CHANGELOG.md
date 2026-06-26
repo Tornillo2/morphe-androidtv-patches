@@ -1,3 +1,10 @@
+## [1.5.6](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.5.5...v1.5.6) (2026-06-26)
+
+
+### Bug Fixes
+
+* **peacock:** fix Layer 7 VerifyError launch crash + re-add Layers 9-11 ([#32](https://github.com/ajstrick81/morphe-androidtv-patches/issues/32)) ([c5257dd](https://github.com/ajstrick81/morphe-androidtv-patches/commit/c5257dde17b6ae5b9d5fa6e9025d14788abe5337))
+
 ## [1.5.5](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.5.4...v1.5.5) (2026-06-26)
 
 
