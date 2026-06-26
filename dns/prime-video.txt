@@ -1,8 +1,10 @@
 ! Prime Video — DNS Ad-Suppression Filter List
-! Version: 4.1
+! Version: 4.2
 ! Updated: 2026-06-26
 ! Format: AdGuard Home filter syntax (pi-hole notes in dns/README.md)
 ! v4.1: safe-harbor + ad hosts re-confirmed against TLS SNI from packet captures.
+! v4.2: live mobile session (10 titles, 1 ad) confirmed the list working; added
+!       hercule.triggers-v1 (suspect ad trigger seen slipping through).
 !
 ! ─────────────────────────────────────────────────────────────────────────────
 ! WHY THIS LIST EXISTS — the dual-layer strategy
@@ -85,7 +87,7 @@
 @@||images-na.ssl-images-amazon.com^$important
 @@||m.media-amazon.com^$important
 
-! Weblab is allowed wholesale EXCEPT the zoar ad trigger (blocked in §2). [v3.6]
+! Weblab is allowed wholesale EXCEPT the zoar/hercule ad triggers (blocked §2). [v3.6]
 @@||*.weblab.a2z.com^
 
 ! ═════════════════════════════════════════════════════════════════════════════
@@ -110,6 +112,11 @@
 ! Weblab zoar ad trigger — confirmed ad-specific; $important beats the §1 weblab
 ! allow. Prime suspect for persisting pre-rolls. [v3.6][PC]
 ||zoar.triggers-v1.prod.mobile.weblab.a2z.com^$important$dnsrewrite=0.0.0.0
+! Weblab hercule ad trigger — SUSPECT: same triggers-v1 namespace as zoar, seen
+! allowed (green) all through a mobile session where 1 ad slipped past. Specific
+! host only; broaden to ||*.triggers-v1.prod.mobile.weblab.a2z.com^ if more ad
+! siblings appear (that nukes ALL mobile weblab experiments — do it knowingly). [UNV]
+||hercule.triggers-v1.prod.mobile.weblab.a2z.com^$important$dnsrewrite=0.0.0.0
 
 ! Ad orchestration prefixes on the video API. api.amazonvideo.com hosts MANY
 ! rotating CONTENT prefixes (keho/qgmg/p7kg/abxc3apcastp/ab8mt4dd97et...), so we
@@ -144,7 +151,10 @@
 ! ||atv-ps-*.amazon.com^$dnsrewrite=0.0.0.0
 ! ||web-checks.a2z.com^$dnsrewrite=0.0.0.0
 
-! -- IoT ad signaling [v3.6]
+! -- IoT ad signaling — seen ALLOWED in the mobile session. v3.6 flags it as ad
+!    signaling, but it is a single AWS IoT endpoint that may also carry device /
+!    cast state, so it is left opt-in. Enable if chasing the last ad, and watch
+!    cast/remote features. [v3.6]
 ! ||a2hmcwiq4hwfgz-ats.iot.us-east-1.amazonaws.com^$dnsrewrite=0.0.0.0
 
 ! ═════════════════════════════════════════════════════════════════════════════
