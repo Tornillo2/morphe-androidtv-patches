@@ -158,6 +158,32 @@
       "options": []
     },
     {
+      "name": "Override certificate pinning",
+      "description": "Allows HTTPS traffic inspection tools like AdGuard Premium to intercept app connections. Enables ViX live (Lura SSAI) ad suppression when used alongside AdGuard Premium.",
+      "use": true,
+      "dependencies": [],
+      "compatiblePackages": {
+        "com.univision.prendetv": [
+          "4.46.0_tv"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "ViX Android TV",
+          "packageName": "com.univision.prendetv",
+          "description": null,
+          "appIconColor": 41193,
+          "targets": [
+            {
+              "version": "4.46.0_tv",
+              "experimental": false
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Paramount+ Android TV",
       "description": "Removes VOD ads and pause ads while preserving live TV.",
       "use": true,
@@ -327,7 +353,7 @@
     },
     {
       "name": "Skip ads",
-      "description": "Suppresses ViX ad delivery by disabling the FreeWheel ad provider at the config level and preventing the Innovid SSAI overlay from mounting.",
+      "description": "Suppresses ViX ad delivery by stopping the LuraPlayer linear ad-break scheduler (client-side VAST) and preventing the Innovid SSAI ad overlay from mounting.",
       "use": true,
       "dependencies": [],
       "compatiblePackages": {
