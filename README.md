@@ -17,7 +17,7 @@ I'm just like you — I enjoy watching TV and movies without being bored and ann
 | App | Package | Status | Tested Version | Date |
 |-----|---------|--------|---------------|------|
 | 🟢 Disney+ | `com.disney.disneyplus` | Working | `26.9.2+rc1-2026.06.12` | 6/17/26 |
-| 🟢 Prime Video | `com.amazon.amazonvideo.livingroom` | Working | `6.23.23+v15.5.0.70-armv7a` | 6/18/26 |
+| 🟢 Prime Video | `com.amazon.amazonvideo.livingroom` | Working - [Use with DNS filters](dns/README.md) | `6.23.23+v15.5.0.70-armv7a` | 6/18/26 |
 | 🟢 HBO Max | `com.wbd.hbomax` | Working | `v7.2.0.41` | 5/5/26 |
 | 🟢 Peacock | `com.peacocktv.peacockandroid` | Working - [Use with DNS filters:](https://github.com/ajstrick81/Peacock-Ads) | `v7.5.102` | 6/13/26 |
 | 🟢 Tubi | `com.tubitv` | Working | `v10.20.5000` | 5/20/26 |
@@ -75,6 +75,11 @@ All patches follow the same general workflow using **Morphe Manager**:
 2. Download the `.apkm` file
 3. Select it in Morphe Manager
 4. Apply the patch
+
+> 🛡️ **Recommended: run the DNS filter alongside the patch.** Prime Video picks
+> its ad-delivery path server-side; the bytecode patch covers the "Java road"
+> while a DNS blocklist covers the "native road" the patch can't see. See
+> [**dns/README.md**](dns/README.md) for the list and the dual-layer rationale.
 
 ---
 

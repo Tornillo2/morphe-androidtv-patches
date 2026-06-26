@@ -30,7 +30,8 @@ serves the Widevine license). That path is exactly what the patch handles.
 ## What this list is calibrated for
 
 Every rule is tagged with the capture that confirmed it (`[ATV]`, `[PC]`,
-`[PIH]`, `[v3.6]`, `[UNV]` = unverified). It is deliberately **more conservative
+`[PIH]`, `[PCAP]` = TLS SNI from packet captures, `[v3.6]`, `[UNV]` =
+unverified). It is deliberately **more conservative
 on CDNs than the older v3.6 list**, because our packet/HAR evidence proved v3.6
 would block real movie content:
 
@@ -69,7 +70,8 @@ Pi-hole does not parse `$dnsrewrite`/`$important`. Two options:
   - Block: `amazon-adsystem.com`, `aiv-delivery.net`,
     `zoar.triggers-v1.prod.mobile.weblab.a2z.com`
   - Allowlist (critical): `atv-ps.amazon.com`, `vod-dash.main.amazon.pv-cdn.net`,
-    `vod-dash-pv-ta-amazon.akamaized.net`, `cf-timedtext.aux.pv-cdn.net`
+    `vod-dash-pv-ta-amazon.akamaized.net`, `aux.pv-cdn.net` (subtitles +
+    trickplay), `aiv-cdn.net`, `images-na.ssl-images-amazon.com`, `m.media-amazon.com`
 
 > The `threeplr*`/`nit*` prefix rules need wildcard/regex support; in Pi-hole use
 > a regex blacklist: `^(threeplr|nit)[a-z0-9.-]*\.api\.amazonvideo\.com$`.

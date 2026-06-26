@@ -1,7 +1,8 @@
 ! Prime Video — DNS Ad-Suppression Filter List
-! Version: 4.0
+! Version: 4.1
 ! Updated: 2026-06-26
 ! Format: AdGuard Home filter syntax (pi-hole notes in dns/README.md)
+! v4.1: safe-harbor + ad hosts re-confirmed against TLS SNI from packet captures.
 !
 ! ─────────────────────────────────────────────────────────────────────────────
 ! WHY THIS LIST EXISTS — the dual-layer strategy
@@ -24,6 +25,7 @@
 !   [PC]    = PC AdGuard HAR capture, 2026-06-25 (Java road, getVideoAds)
 !   [PIH]   = friend's pi-hole DNS log, 2026-06-26
 !   [v3.6]  = carried from the user's hand-tuned v3.6 list
+!   [PCAP]  = TLS SNI from packet captures (handshake/type/aiv.pcapng)
 !   [UNV]   = asserted by v3.6 but NOT independently confirmed by our captures
 !
 ! ─────────────────────────────────────────────────────────────────────────────
@@ -36,9 +38,9 @@
 !     blocking on these shared CDNs WILL eventually block content. Ad segments on
 !     these CDNs can only be separated from content at the path/manifest layer —
 !     that is the patch's job, not DNS. These hosts are now in SAFE HARBOR.
-!  2. s0s7.api.amazonvideo.com is NO LONGER blocked by default. v3.6 null-routed
-!     it as "fast-fail", but [ATV] shows it returning HTTP 304 as a live playback
-!     API. Moved to the opt-in/uncertain section.
+!  2. s0s7.api.amazonvideo.com is NO LONGER blocked. v3.6 null-routed it as
+!     "fast-fail", but [ATV] shows it returning HTTP 304 and [PCAP] caught it in
+!     the live session SNI — it is a playback API. Now in SAFE HARBOR.
 !  3. atv-ps-*.amazon.com moved to opt-in. atv-ps.amazon.com (no hyphen) is the
 !     dual-use DRM + playback + getVideoAds host and is now an $important allow.
 !  4. The path-based "ad image" rules were DROPPED. DNS cannot match URL paths;
@@ -62,14 +64,26 @@
 @@||p7kg.api.amazonvideo.com^$important
 ! TER playback routing — present in BOTH ad-free and ad-supported sessions [v3.6]
 @@||abxc3apcastp.na-f.api.amazonvideo.com^$important
-! Playback API shard — returned HTTP 304 (live) in capture [ATV]
+! Playback API shard — returned HTTP 304 (live) in capture; confirmed via SNI [ATV][PCAP]
 @@||s0s7.api.amazonvideo.com^$important
 
-! VOD content CDNs — CAUGHT SERVING THE MOVIE in capture. Do not block. [PC]
-@@||vod-dash.main.amazon.pv-cdn.net^$important
+! VOD content CDNs — CAUGHT SERVING THE MOVIE. [PC] HAR caught the akamaized
+! host; [PCAP] caught 11 content shards under main.amazon.pv-cdn.net (prefix
+! family abkyoveaaaaaaaam*, across vod-dash / pop-vod-dash / ta.* variants).
+! Allowed at the main.amazon.pv-cdn.net root so every variant is covered.
+! Do not block — see the Tier-2 prefix-roulette note.
+@@||main.amazon.pv-cdn.net^$important
 @@||vod-dash-pv-ta-amazon.akamaized.net^$important
-! Subtitle / caption CDN [v3.6]
-@@||cf-timedtext.aux.pv-cdn.net^$important
+! Auxiliary playback CDN — subtitles (cf-timedtext) + trickplay scrub thumbnails
+! (cf-trickplay). Generalized to the aux host so both are covered. [v3.6][PCAP]
+@@||aux.pv-cdn.net^$important
+! Experience / UI asset CDN (cloudfront-fronted). NOTE: aiv-cdn.net is CONTENT,
+! distinct from aiv-delivery.net (ads, blocked in §2). [PCAP]
+@@||aiv-cdn.net^$important
+! Image / artwork hosts. Ad images here are PATH-scoped, so the host stays
+! allowed and the patch handles the ad paths (see PATCH-DOMAIN). [PCAP]
+@@||images-na.ssl-images-amazon.com^$important
+@@||m.media-amazon.com^$important
 
 ! Weblab is allowed wholesale EXCEPT the zoar ad trigger (blocked in §2). [v3.6]
 @@||*.weblab.a2z.com^
@@ -82,7 +96,9 @@
 ! Amazon ad platform — exchange/decisioning/aax. Pure ad-tech. [PIH]
 ||amazon-adsystem.com^$dnsrewrite=0.0.0.0
 
-! Prime ad delivery / SSAI network — decisioning API + SGAI stitchers. [ATV][PIH]
+! Prime ad delivery / SSAI network — decisioning + SGAI stitchers. Confirmed SNI:
+! api.us-east-1.aiv-delivery.net + ters-draper1.us-east-1.aiv-delivery.net.
+! [ATV][PIH][PCAP]
 ! NOTE: this includes the SGAI stitcher (ters-sgai1 / ters-draper1...). On a
 ! NATIVE-road session the player expects the stitched manifest, so a rare
 ! playback hiccup is possible. If you ever see a stall/black-screen on a title,
@@ -95,8 +111,10 @@
 ! allow. Prime suspect for persisting pre-rolls. [v3.6][PC]
 ||zoar.triggers-v1.prod.mobile.weblab.a2z.com^$important$dnsrewrite=0.0.0.0
 
-! Ad orchestration prefixes on the video API. Anchored to the ad prefixes so they
-! cannot collide with the keho/qgmg/p7kg/abxc3apcastp content prefixes. [v3.6]
+! Ad orchestration prefixes on the video API. api.amazonvideo.com hosts MANY
+! rotating CONTENT prefixes (keho/qgmg/p7kg/abxc3apcastp/ab8mt4dd97et...), so we
+! never block the domain — only the ad prefixes. threeplr confirmed via real SNI:
+! threeplr-ab5w7agdemte.api.amazonvideo.com. [v3.6][PCAP]
 ||threeplr*.api.amazonvideo.com^$dnsrewrite=0.0.0.0
 ||nit*.api.amazonvideo.com^$dnsrewrite=0.0.0.0
 
@@ -114,7 +132,9 @@
 ! /^a\d+.*vottevtad.*\.akamaihd\.net$/$dnsrewrite=0.0.0.0
 
 ! -- pv-cdn ad-prefix attempts. HIGH RISK: shares the VOD-DASH content CDN that
-!    §1 protects. Prefix rotation means these will eventually catch content. [UNV]
+!    §1 protects. [PCAP] caught content on prefix abkyoveaaaaaaaam* — a different
+!    family from these abgqa65/abepmbf/abgarbv guesses, proving the prefix space
+!    rotates and host/prefix blocking here WILL eventually catch content. [UNV]
 ! ||abgqa65*.pv-cdn.net^$dnsrewrite=0.0.0.0
 ! ||abepmbf*.pv-cdn.net^$dnsrewrite=0.0.0.0
 ! ||abgarbv*.pv-cdn.net^$dnsrewrite=0.0.0.0
@@ -122,7 +142,6 @@
 ! -- Playback-service variants / probes. May be regional playback endpoints;
 !    [ATV] shows the un-hyphenated atv-ps.amazon.com is essential. [UNV]
 ! ||atv-ps-*.amazon.com^$dnsrewrite=0.0.0.0
-! ||s0s7.api.amazonvideo.com^$dnsrewrite=0.0.0.0
 ! ||web-checks.a2z.com^$dnsrewrite=0.0.0.0
 
 ! -- IoT ad signaling [v3.6]
@@ -135,8 +154,9 @@
 ||device-metrics-us.amazon.com^$dnsrewrite=0.0.0.0
 ||fls-na.amazon.com^$dnsrewrite=0.0.0.0
 ||p-v-logs.amazon.com^$dnsrewrite=0.0.0.0
-! Minerva metric pipeline — hashed-subdomain pattern seen failing in [ATV]
-/^[a-f0-9]{64}\.[a-z0-9-]+\.prod\.service\.minerva\.devices\.a2z\.com$/$dnsrewrite=0.0.0.0
+||global.telemetry.insights.video.a2z.com^$dnsrewrite=0.0.0.0
+! Minerva metric pipeline — hashed-subdomain pattern, confirmed via SNI [ATV][PCAP]
+/^[a-f0-9]{32,}\.[a-z0-9-]+\.prod\.service\.minerva\.devices\.a2z\.com$/$dnsrewrite=0.0.0.0
 
 ! ═════════════════════════════════════════════════════════════════════════════
 ! PATCH-DOMAIN — things DNS CANNOT do (handled by the bytecode patch)
