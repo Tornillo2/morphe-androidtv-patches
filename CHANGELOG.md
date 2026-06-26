@@ -1,3 +1,75 @@
+## [1.5.7](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.5.6...v1.5.7) (2026-06-26)
+
+
+### Bug Fixes
+
+* **peacock:** remove blocking Thread.sleep() from ad-block interceptors ([f0d441d](https://github.com/ajstrick81/morphe-androidtv-patches/commit/f0d441de63adb39c33afc78ab1e28a7cbca1b5de))
+* **peacock:** rewrite wrapClient() to use named class, not anonymous ([188b354](https://github.com/ajstrick81/morphe-androidtv-patches/commit/188b354c6551e5a3b958f526b84735ed5926001f))
+* **peacock:** roll back to stable Layers 1-8 + fixed Layer 7 baseline for main ([c54992e](https://github.com/ajstrick81/morphe-androidtv-patches/commit/c54992e342e8e2bf51f5cd95454cd7219e0aaa2c))
+
+## [1.5.6](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.5.5...v1.5.6) (2026-06-26)
+
+
+### Bug Fixes
+
+* **peacock:** fix Layer 7 VerifyError launch crash + re-add Layers 9-11 ([#32](https://github.com/ajstrick81/morphe-androidtv-patches/issues/32)) ([c5257dd](https://github.com/ajstrick81/morphe-androidtv-patches/commit/c5257dde17b6ae5b9d5fa6e9025d14788abe5337))
+
+## [1.5.5](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.5.4...v1.5.5) (2026-06-26)
+
+
+### Bug Fixes
+
+* **peacock:** roll back to known-good Layers 1-8; remove launch-breaking Layers 9-10 ([#31](https://github.com/ajstrick81/morphe-androidtv-patches/issues/31)) ([3641c54](https://github.com/ajstrick81/morphe-androidtv-patches/commit/3641c54c2387b143168e7a199ec1c81cb7a86d58))
+
+## [1.5.4](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.5.3...v1.5.4) (2026-06-25)
+
+
+### Bug Fixes
+
+* **peacock:** revert Layer 11 + SAS/VAC matcher that broke playback on v7.5.100 ([#29](https://github.com/ajstrick81/morphe-androidtv-patches/issues/29)) ([#30](https://github.com/ajstrick81/morphe-androidtv-patches/issues/30)) ([09f5c64](https://github.com/ajstrick81/morphe-androidtv-patches/commit/09f5c64a0b33569779e32d9a1fe55903980ca757)), closes [#27](https://github.com/ajstrick81/morphe-androidtv-patches/issues/27)
+
+## [1.5.3](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.5.2...v1.5.3) (2026-06-25)
+
+
+### Bug Fixes
+
+* **peacock:** Layer 11 media-client coverage + SAS/VAC shard matching ([#27](https://github.com/ajstrick81/morphe-androidtv-patches/issues/27)) ([a132655](https://github.com/ajstrick81/morphe-androidtv-patches/commit/a132655743cff6cdf56e7ff65be3150952544759))
+
+## [1.5.2](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.5.1...v1.5.2) (2026-06-25)
+
+
+### Bug Fixes
+
+* **peacock:** DNS-independent ad suppression — Sky SDK addon OkHttp client + New Relic agent kill ([#26](https://github.com/ajstrick81/morphe-androidtv-patches/issues/26)) ([5e592a4](https://github.com/ajstrick81/morphe-androidtv-patches/commit/5e592a4a23464c7ed6492cdd69b488f98beb06d8))
+
+## [1.5.1](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.5.0...v1.5.1) (2026-06-23)
+
+
+### Bug Fixes
+
+* **mlbtv:** re-enable SSAI/DAI/TXXX blocking patches alongside overlay ([4cfcf7c](https://github.com/ajstrick81/morphe-androidtv-patches/commit/4cfcf7c4b3a22a1352e87f25a250ee05c8f5d0a3))
+
+# [1.5.0](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.107...v1.5.0) (2026-06-23)
+
+
+### Features
+
+* replace MLB At Bat SSAI/DAI blocking with ad-break overlay ([adc3d3f](https://github.com/ajstrick81/morphe-androidtv-patches/commit/adc3d3fa802a43c494e487e28472a0c40a26899b))
+
+## [1.4.107](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.106...v1.4.107) (2026-06-23)
+
+
+### Bug Fixes
+
+* **primevideo:** replace non-existent allowAutoUpdates attribute with versionCode bump ([e758753](https://github.com/ajstrick81/morphe-androidtv-patches/commit/e75875319b5831a3da95b6d30758b47934020a29))
+
+## [1.4.106](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.105...v1.4.106) (2026-06-23)
+
+
+### Bug Fixes
+
+* push new version with changes to Update Fingerprints.kt ([3775332](https://github.com/ajstrick81/morphe-androidtv-patches/commit/37753320a316f5e351a0cf5e628fc1ca29d06f39))
+
 ## [1.4.105](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.4.104...v1.4.105) (2026-06-23)
 
 

@@ -1,5 +1,5 @@
 {
-  "version": "1.4.105",
+  "version": "1.5.7",
   "appNames": {
     "com.fox.foxone": "Fox One Android TV",
     "com.peacocktv.peacockandroid": "Peacock TV Android TV",
@@ -107,7 +107,7 @@
     },
     {
       "name": "MLB At Bat Android TV",
-      "description": "Removes VOD ads and between-innings gambling ads while preserving live game playback.",
+      "description": "Removes VOD ads and shows a commercial-break overlay over live gambling ads while preserving live game playback.",
       "use": true,
       "dependencies": [],
       "compatiblePackages": {
@@ -242,7 +242,7 @@
     },
     {
       "name": "Skip ads",
-      "description": "Disables ad delivery via Sky SDK surgical targets (FreeWheel DI module skip, MediaTailor SSAI layers, ad-break-started no-op), OkHttp interceptor, and WebView shouldInterceptRequest wrapper. Validated v7.5.102 and v7.6.100.",
+      "description": "Disables ad delivery via Sky SDK surgical targets (FreeWheel DI module skip, MediaTailor SSAI layers, ad-break-started no-op), AdBlockInterceptor wiring on the app NetworkingKt OkHttp client, and a WebView shouldInterceptRequest wrapper. Pair with DNS filtering for full ad suppression. Validated v7.5.102 and v7.6.100.",
       "use": true,
       "dependencies": [],
       "compatiblePackages": {

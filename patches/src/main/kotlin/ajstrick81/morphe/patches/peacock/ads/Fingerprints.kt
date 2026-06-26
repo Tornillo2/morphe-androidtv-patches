@@ -178,3 +178,8 @@ internal object FreewheelModuleSkipFingerprint : Fingerprint(
             classDef.type == "Lcom/sky/core/player/sdk/addon/di/AddonInjectorImpl;"
     },
 )
+
+// NOTE: NativeNetworkApiConstructorFingerprint (Layer 9), SdkRootOkHttpClientFingerprint
+// (Layer 11), and NewRelicInitFingerprint (Layer 10) are intentionally absent from this
+// stable main baseline -- see the matching NOTE in SkipAdsPatch.kt. They are still being
+// developed and device-verified on the dev branch before any future re-promotion here.

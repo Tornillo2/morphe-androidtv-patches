@@ -44,6 +44,7 @@
 package app.morphe.patches.mlbtv
 
 import app.morphe.patcher.Fingerprint
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 // ---------------------------------------------------------------------------
 // Patch 1a: VOD SSAI — createVodStreamRequest (3-arg)
@@ -144,5 +145,63 @@ internal object ExoMediaPlayerMetadataFingerprint : Fingerprint(
         method.name == "onMetadata" &&
             method.parameterTypes.size == 1 &&
             method.parameterTypes[0] == "Ll5/t;"
+    },
+)
+
+// ---------------------------------------------------------------------------
+// Patch 5: Ad-Break Overlay
+//
+// VERIFIED via androguard dex analysis of this build (7 classesN.dex):
+//
+//   Lb6/h$d;.b(Ll5/q;)Lg6/w; — builds the SSAI display container:
+//     invoke-interface ..., Ll5/d;->getAdViewGroup()Landroid/view/ViewGroup;
+//     move-result-object v3
+//     invoke-static v3, v7, ImaSdkFactory;->createStreamDisplayContainer(
+//         Landroid/view/ViewGroup;
+//         Lcom/google/ads/interactivemedia/v3/api/player/VideoStreamPlayer;
+//     )Lcom/google/ads/interactivemedia/v3/api/StreamDisplayContainer;
+//   v7 (the VideoStreamPlayer passed alongside the ViewGroup) is a freshly
+//   constructed Lb6/h$i;, confirmed below.
+//
+//   Lb6/h$i; implements VideoStreamPlayer with no-op bodies (return-void,
+//   1 register = this) for:
+//     onAdBreakStarted()V
+//     onAdBreakEnded()V
+//   These are the only two implementations of these method names found in
+//   the entire app's dex set (the interface's own abstract declaration is
+//   the only other occurrence and has no implementation to match against).
+//
+// createStreamDisplayContainer is a literal Google IMA SDK method name
+// (unobfuscated, since IMA SDK classes ship as a third-party dependency),
+// and is called from exactly one place app-wide in this build — so the
+// fingerprint below needs no hardcoded obfuscated class name to stay
+// unique, only the method-name match.
+// ---------------------------------------------------------------------------
+
+internal object SsaiDisplayContainerFingerprint : Fingerprint(
+    custom = { method, _ ->
+        method.implementation?.instructions?.any { instruction ->
+            (instruction as? com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction)
+                ?.reference?.let { (it as? MethodReference)?.name } ==
+                "createStreamDisplayContainer"
+        } == true
+    },
+)
+
+internal object AdBreakStartedFingerprint : Fingerprint(
+    returnType = "V",
+    custom = { method, _ ->
+        method.name == "onAdBreakStarted" &&
+            method.parameterTypes.isEmpty() &&
+            method.implementation != null
+    },
+)
+
+internal object AdBreakEndedFingerprint : Fingerprint(
+    returnType = "V",
+    custom = { method, _ ->
+        method.name == "onAdBreakEnded" &&
+            method.parameterTypes.isEmpty() &&
+            method.implementation != null
     },
 )

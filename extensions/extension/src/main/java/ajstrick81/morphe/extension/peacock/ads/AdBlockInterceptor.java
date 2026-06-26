@@ -18,8 +18,9 @@ import java.util.Random;
  * in FreeWheel's fraud detection system.
  *
  * Response strategy (matches PeacockWebViewHelper):
- *   - Ad CDN hosts:   75% 503, 25% 204, with occasional 50–200ms delay
- *   - Analytics hosts: 50% 204, 50% 200, with occasional delay
+ *   - Ad CDN hosts:   75% 503, 25% 204
+ *   - Analytics hosts: 50% 204, 50% 200
+ * No artificial delay is added — see randomAdResponse() below for why.
  *
  * Why 503 for ad CDN (not 200):
  *   503 triggers ExoPlayer's error/skip logic rather than the media parser.
@@ -79,13 +80,19 @@ public class AdBlockInterceptor implements Interceptor {
         "2mdn.net",
     };
 
-    // Analytics and ad decision endpoints reachable via OkHttp
+    // Analytics and ad decision endpoints reachable via OkHttp.
+    //
+    // sas.peacocktv.com (Streaming Ad Service) / vac.peacocktv.com (Video Ad
+    // Config) are matched here as flat substrings — the proven form shipped
+    // through the 1.4.x line. A structural leftmost-label matcher was tried in
+    // v1.5.3 to also catch regional shards (sas.f / sas.a) but was reverted
+    // after it regressed core screen loading on v7.5.100 (issue #29).
     private static final String[] ANALYTICS_DOMAINS = {
-        "vac.peacocktv.com",
-        "sas.peacocktv.com",
         "fwmrm.net",
         "video-ads-module.ad-tech.nbcuni.com",
         "mediatailor.",
+        "sas.peacocktv.com",
+        "vac.peacocktv.com",
         "scorecardresearch.com",
         "conviva.com",
         "imrworldwide.com",
@@ -100,6 +107,11 @@ public class AdBlockInterceptor implements Interceptor {
         "rlcdn.com",
         "nbcuas.com",
         "mparticle.com",
+        // Added after AGH log analysis — confirmed contacted but previously
+        // unblocked at the OkHttp layer:
+        "flashtalking.com",
+        "researchnow.com",
+        "firebaselogging.googleapis.com", // full host only — must not catch play*.googleapis.com
     };
 
     @Override
@@ -134,16 +146,21 @@ public class AdBlockInterceptor implements Interceptor {
     /**
      * Randomized response for ad video CDN requests.
      * Uses 503 as primary to trigger ExoPlayer's error/skip path.
-     * Mixes in 204 and occasional delays to avoid uniform blocking pattern.
+     * Mixes in 204 to avoid a uniform blocking pattern.
+     *
+     * No artificial delay here (unlike the status-code mix, which is the
+     * actual anti-fraud-detection signal): NetworkingKt.getOkHttpClient()
+     * builds a brand-new OkHttpClient — with its own Dispatcher thread pool —
+     * on every call, confirmed via decompilation. Stock app tolerates this
+     * because requests on those ephemeral clients finish fast and the threads
+     * get reaped quickly. A Thread.sleep() here held those ephemeral worker
+     * threads open longer, and on a memory-constrained Android TV box the
+     * ephemeral clients piled up faster than they could be reaped, causing a
+     * sustained Java-heap GC pressure climb to OOM within ~2.5 minutes of
+     * launch (issue #29 follow-up) — never observed in the unpatched app.
      */
     private static Response randomAdResponse(final Chain chain) {
         int roll = RANDOM.nextInt(100);
-
-        if (roll < 15) {
-            try { Thread.sleep(50 + RANDOM.nextInt(150)); }
-            catch (InterruptedException ignored) {}
-        }
-
         int code = (roll < 25) ? 204 : 503;
         String message = (code == 204) ? "No Content" : "Service Unavailable";
 
@@ -161,15 +178,11 @@ public class AdBlockInterceptor implements Interceptor {
      * Randomized response for analytics/beacon endpoints.
      * Uses 204 as primary — normal server behaviour for accepted beacons.
      * Looks like server-side suppression rather than client-side blocking.
+     *
+     * No artificial delay — see randomAdResponse() above.
      */
     private static Response randomAnalyticsResponse(final Chain chain) {
         int roll = RANDOM.nextInt(100);
-
-        if (roll < 15) {
-            try { Thread.sleep(50 + RANDOM.nextInt(150)); }
-            catch (InterruptedException ignored) {}
-        }
-
         int code = (roll < 50) ? 204 : 200;
         String message = (code == 204) ? "No Content" : "OK";
 

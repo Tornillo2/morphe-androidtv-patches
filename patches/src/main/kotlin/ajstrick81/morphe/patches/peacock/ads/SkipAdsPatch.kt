@@ -14,8 +14,9 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 val skipAdsPatch = bytecodePatch(
     name = "Skip ads",
     description = "Disables ad delivery via Sky SDK surgical targets (FreeWheel DI module " +
-        "skip, MediaTailor SSAI layers, ad-break-started no-op), OkHttp interceptor, and " +
-        "WebView shouldInterceptRequest wrapper. Validated v7.5.102 and v7.6.100.",
+        "skip, MediaTailor SSAI layers, ad-break-started no-op), AdBlockInterceptor wiring " +
+        "on the app NetworkingKt OkHttp client, and a WebView shouldInterceptRequest wrapper. " +
+        "Pair with DNS filtering for full ad suppression. Validated v7.5.102 and v7.6.100.",
 ) {
     compatibleWith(Constants.COMPATIBILITY)
 
@@ -196,5 +197,14 @@ val skipAdsPatch = bytecodePatch(
             removeInstruction(16) // iget-object v0, freewheelModule
             removeInstruction(16) // import$default(...) — now shifted to 16
         }
+
+        // NOTE: Layers 9–11 (Sky SDK addon-client interceptor, New Relic init
+        // no-op, and SDK root-client interceptor) are intentionally absent from
+        // this stable main baseline. They were briefly re-added in v1.5.6 on
+        // the theory that the v1.5.4/v1.5.5 launch crash had been caused by
+        // them — it was not; that crash was the Layer 7 VerifyError fixed
+        // above. With Layers 9-11 never having run in a launchable app, their
+        // correctness is unverified on-device. They continue to be developed
+        // and verified on the dev branch before any future re-promotion here.
     }
 }
