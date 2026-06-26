@@ -1,3 +1,12 @@
+## [1.5.7](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.5.6...v1.5.7) (2026-06-26)
+
+
+### Bug Fixes
+
+* **peacock:** remove blocking Thread.sleep() from ad-block interceptors ([f0d441d](https://github.com/ajstrick81/morphe-androidtv-patches/commit/f0d441de63adb39c33afc78ab1e28a7cbca1b5de))
+* **peacock:** rewrite wrapClient() to use named class, not anonymous ([188b354](https://github.com/ajstrick81/morphe-androidtv-patches/commit/188b354c6551e5a3b958f526b84735ed5926001f))
+* **peacock:** roll back to stable Layers 1-8 + fixed Layer 7 baseline for main ([c54992e](https://github.com/ajstrick81/morphe-androidtv-patches/commit/c54992e342e8e2bf51f5cd95454cd7219e0aaa2c))
+
 ## [1.5.6](https://github.com/ajstrick81/morphe-androidtv-patches/compare/v1.5.5...v1.5.6) (2026-06-26)
 
 
