@@ -1,10 +1,12 @@
 ! Prime Video — DNS Ad-Suppression Filter List
-! Version: 4.2
+! Version: 4.3
 ! Updated: 2026-06-26
 ! Format: AdGuard Home filter syntax (pi-hole notes in dns/README.md)
 ! v4.1: safe-harbor + ad hosts re-confirmed against TLS SNI from packet captures.
 ! v4.2: live mobile session (10 titles, 1 ad) confirmed the list working; added
 !       hercule.triggers-v1 (suspect ad trigger seen slipping through).
+! v4.3: added optional Section 5 (general third-party trackers seen in-session,
+!       NOT Prime-specific; a maintained general list like HaGeZi is preferred).
 !
 ! ─────────────────────────────────────────────────────────────────────────────
 ! WHY THIS LIST EXISTS — the dual-layer strategy
@@ -167,6 +169,34 @@
 ||global.telemetry.insights.video.a2z.com^$dnsrewrite=0.0.0.0
 ! Minerva metric pipeline — hashed-subdomain pattern, confirmed via SNI [ATV][PCAP]
 /^[a-f0-9]{32,}\.[a-z0-9-]+\.prod\.service\.minerva\.devices\.a2z\.com$/$dnsrewrite=0.0.0.0
+
+! ═════════════════════════════════════════════════════════════════════════════
+! SECTION 5 — GENERAL THIRD-PARTY TRACKERS (optional; NOT Prime-specific)
+! ─────────────────────────────────────────────────────────────────────────────
+! These showed up RED (blocked by general lists) alongside Prime Video in a live
+! session, but NONE are Prime infrastructure — they are generic mobile ad /
+! marketing / analytics SDKs and OEM ad junk fired by the OS and other apps.
+!
+! A maintained general blocklist (e.g. HaGeZi Multi/Pro) covers these far better
+! and stays current — see dns/README.md. This curated snapshot is only a baseline
+! for users running ONLY this list. Two RED hosts were deliberately EXCLUDED:
+!   • 1.datadog.pool.ntp.org  — NTP time sync, not an ad host; blocking it risks
+!                               clock drift -> TLS/DRM failures -> broken playback.
+!   • dp-gw-na.amazon.com     — likely a functional Amazon device gateway.
+! ═════════════════════════════════════════════════════════════════════════════
+
+! Mobile attribution / marketing SDKs (pure trackers)
+||kochava.com^
+||moengage.com^
+! OEM lock-screen ad platform (Glance)
+||glanceapps.com^
+! Google telemetry beacons — ONLY the beacons.* hosts, never all of gvt2/gvt3
+! (those carry Chrome / Play / update traffic). [seen: beacons / beacons1-5 / .grp]
+/^beacons[0-9]*\.(grp\.)?gvt[23]\.com$/
+! Facebook tracking/graph. NOTE: also breaks Facebook-SDK login in OTHER apps —
+! drop these two lines if that matters to you.
+||graph.facebook.com^
+||z-m-gateway.facebook.com^
 
 ! ═════════════════════════════════════════════════════════════════════════════
 ! PATCH-DOMAIN — things DNS CANNOT do (handled by the bytecode patch)

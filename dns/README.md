@@ -52,6 +52,22 @@ would block real movie content:
 3. **Tier 2** — aggressive/opt-in, **commented out**. Real content-risk or
    unverified. Enable one at a time and watch for breakage.
 4. **Telemetry** — privacy only; does not affect ads.
+5. **General trackers** — non-Prime mobile ad/analytics SDKs seen in-session.
+   A convenience baseline only; see "Pair with a general list" below.
+
+## Pair with a general list (important)
+
+This list is intentionally **scoped to Prime Video**. The third-party trackers
+that show up alongside it (Google beacons, Facebook, Glance, Kochava, MoEngage,
+etc.) are generic and are far better handled by a **maintained general
+blocklist** that stays current. If you run only this list, add one beside it:
+
+- **HaGeZi Multi** (recommended balance) or **Multi Pro** —
+  `https://github.com/hagezi/dns-blocklists`
+
+Section 5 of `prime-video.txt` is only a small snapshot for users who can't add
+a general list; it is not a substitute for one, and it deliberately omits hosts
+that are risky to block (NTP time sync, Amazon device gateways).
 
 ## Usage
 
