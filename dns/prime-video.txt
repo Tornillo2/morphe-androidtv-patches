@@ -1,12 +1,20 @@
 ! Prime Video — DNS Ad-Suppression Filter List
-! Version: 4.3
-! Updated: 2026-06-26
+! Version: 4.6
+! Updated: 2026-06-27
 ! Format: AdGuard Home filter syntax (pi-hole notes in dns/README.md)
 ! v4.1: safe-harbor + ad hosts re-confirmed against TLS SNI from packet captures.
 ! v4.2: live mobile session (10 titles, 1 ad) confirmed the list working; added
 !       hercule.triggers-v1 (suspect ad trigger seen slipping through).
 ! v4.3: added optional Section 5 (general third-party trackers seen in-session,
 !       NOT Prime-specific; a maintained general list like HaGeZi is preferred).
+! v4.4: fixed the akamaized.net safe-harbor allow — || cannot match a prefix
+!       glued directly onto a label (a30vod-dash-..., a169vod-dash-...);
+!       switched to a regex rule that actually matches the live shard hosts.
+! v4.5: promoted the SGAI Akamai-HD ad-media hosts (avoddashs3ww-a / aivottevtad-a
+!       / vottevtad*) to TIER 1 after a with-ad HAR confirmed zero host overlap
+!       with content (akamaiHD = ads, akamaiZED = content).
+! v4.6: added regolith.prime-video.amazon.dev (pause-screen ad endpoint,
+!       /getAds?...&format=PAUSE_ADS_STATIC — confirmed ad-only, no content path).
 !
 ! ─────────────────────────────────────────────────────────────────────────────
 ! WHY THIS LIST EXISTS — the dual-layer strategy
@@ -77,7 +85,13 @@
 ! Allowed at the main.amazon.pv-cdn.net root so every variant is covered.
 ! Do not block — see the Tier-2 prefix-roulette note.
 @@||main.amazon.pv-cdn.net^$important
-@@||vod-dash-pv-ta-amazon.akamaized.net^$important
+! NOTE: || requires a label boundary (dot) before the match, but real shard
+! hostnames glue a prefix directly onto the label with no separator
+! (a30vod-dash-pv-ta-amazon.akamaized.net, a169vod-dash-..., a64vod-dash-...).
+! || cannot match that, so it silently never fired. Regex form below matches
+! the concatenated-prefix pattern. [AGH log 2026-06-26: these hosts showed
+! "Processed" (plain upstream) instead of "Allowed/Custom filtering rules"]
+@@/^[a-z0-9]*vod-dash-pv-ta-amazon\.akamaized\.net$/$important
 ! Auxiliary playback CDN — subtitles (cf-timedtext) + trickplay scrub thumbnails
 ! (cf-trickplay). Generalized to the aux host so both are covered. [v3.6][PCAP]
 @@||aux.pv-cdn.net^$important
@@ -127,18 +141,30 @@
 ||threeplr*.api.amazonvideo.com^$dnsrewrite=0.0.0.0
 ||nit*.api.amazonvideo.com^$dnsrewrite=0.0.0.0
 
+! SGAI ad-media host (Akamai). CONFIRMED ad-only by a with-ad PC HAR capture:
+! a "yoda-sgai" decisioning call hands the client 16s/32s ad clips delivered from
+! avoddashs3ww-a.akamaihd.net, while content stayed on pv-cdn.net + akamaized.net
+! in the SAME session (zero host overlap). akamaiHD.net = ads here; akamaiZED.net
+! = content (safe-harbored in §1) — different domains, so this cannot collide with
+! content. dnsrewrite=0.0.0.0 = fast connection-refused so the SGAI client fails
+! the ad fetch quickly and falls back to content instead of stalling. [PC 06-26]
+||avoddashs3ww-a.akamaihd.net^$dnsrewrite=0.0.0.0
+||aivottevtad-a.akamaihd.net^$dnsrewrite=0.0.0.0
+/^a\d+.*vottevtad.*\.akamaihd\.net$/$dnsrewrite=0.0.0.0
+
+! Pause-screen ad endpoint — GetVodPlaybackResources hands the client a
+! pauseAdsResolutionUrl pointing here: /getAds?version=v1&format=PAUSE_ADS_STATIC.
+! Pure ad-fetch path, no content ever observed on this host. [PC 06-26]
+||regolith.prime-video.amazon.dev^$dnsrewrite=0.0.0.0
+
 ! ═════════════════════════════════════════════════════════════════════════════
 ! SECTION 3 — TIER 2: AGGRESSIVE / OPT-IN (uncomment to enable; CONTENT RISK)
 ! Each carries a real false-positive risk or is unverified by our captures.
 ! Enable one at a time and watch for playback breakage.
 ! ═════════════════════════════════════════════════════════════════════════════
 
-! -- Akamai ad-segment CDNs (akamaihd.net, distinct from the akamaized.net
-!    content CDN allowed in §1). v3.6-asserted ad hosts, NOT seen in our
-!    captures, and CDN routing is non-deterministic. [UNV]
-! ||*avoddashs3ww-a.akamaihd.net^$dnsrewrite=0.0.0.0
-! ||*aivottevtad-a.akamaihd.net^$dnsrewrite=0.0.0.0
-! /^a\d+.*vottevtad.*\.akamaihd\.net$/$dnsrewrite=0.0.0.0
+! -- (Akamai akamaihd.net ad hosts were PROMOTED to TIER 1 above after a with-ad
+!    capture confirmed them as ad-only — see the SGAI ad-media note in §2.)
 
 ! -- pv-cdn ad-prefix attempts. HIGH RISK: shares the VOD-DASH content CDN that
 !    §1 protects. [PCAP] caught content on prefix abkyoveaaaaaaaam* — a different
