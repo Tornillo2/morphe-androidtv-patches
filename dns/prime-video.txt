@@ -76,8 +76,6 @@
 @@||p7kg.api.amazonvideo.com^$important
 ! TER playback routing — present in BOTH ad-free and ad-supported sessions [v3.6]
 @@||abxc3apcastp.na-f.api.amazonvideo.com^$important
-! Playback API shard — returned HTTP 304 (live) in capture; confirmed via SNI [ATV][PCAP]
-@@||s0s7.api.amazonvideo.com^$important
 
 ! VOD content CDNs — CAUGHT SERVING THE MOVIE. [PC] HAR caught the akamaized
 ! host; [PCAP] caught 11 content shards under main.amazon.pv-cdn.net (prefix
@@ -110,6 +108,9 @@
 ! SECTION 2 — TIER 1: HIGH-CONFIDENCE AD HOSTS (recommended; low content risk)
 ! Pure ad infrastructure — never observed serving Prime content.
 ! ═════════════════════════════════════════════════════════════════════════════
+
+! Playback API shard — returned HTTP 304 (live) in capture; confirmed via SNI [ATV][PCAP]
+||s0s7.api.amazonvideo.com$dnsrewrite=0.0.0.0
 
 ! Amazon ad platform — exchange/decisioning/aax. Pure ad-tech. [PIH]
 ||amazon-adsystem.com^$dnsrewrite=0.0.0.0
