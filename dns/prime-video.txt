@@ -45,6 +45,7 @@
 ! Weblab ad triggers ($important beats the weblab allow above)
 ||zoar.triggers-v1.prod.mobile.weblab.a2z.com^$important$dnsrewrite=0.0.0.0
 ||hercule.triggers-v1.prod.mobile.weblab.a2z.com^$important$dnsrewrite=0.0.0.0
+||regolith.prime-video.amazon.dev^$dnsrewrite=0.0.0.0
 
 ! ── TELEMETRY / TRACKERS (privacy; no ad-delivery impact) ─────────────────────
 ! Amazon clickstream (CSM / player events) — covers ipv6.unagi-na too
