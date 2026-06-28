@@ -36,6 +36,7 @@
 ! SGAI ad-media host (Akamai HD) — ads only, distinct from akamaized content
 /^avoddash.*\.akamaihd\.net$/$dnsrewrite=0.0.0.0
 /.*evtad.*\.akamaihd\.net$/$dnsrewrite=0.0.0.0
+/avoddash.*\.akamaihd\.net$/$dnsrewrite=0.0.0.0
 ! Ad-orchestration prefixes on the video API (content prefixes are safe-harbored)
 ||threeplr*.api.amazonvideo.com^$dnsrewrite=0.0.0.0
 ||nit*.api.amazonvideo.com^$dnsrewrite=0.0.0.0
