@@ -40,6 +40,7 @@
 ! Ad-orchestration prefixes on the video API (content prefixes are safe-harbored)
 ||threeplr*.api.amazonvideo.com^$dnsrewrite=0.0.0.0
 ||nit*.api.amazonvideo.com^$dnsrewrite=0.0.0.0
+||vod-dash-pv.amazon.fastly-edge.com^$dnsrewrite=0.0.0.0
 ! s0s7: fires every ad cycle; on-device test showed blocking cuts ads, content
 ! intact. Revert to @@||s0s7.api.amazonvideo.com^$important if playback stalls.
 ||s0s7.api.amazonvideo.com^$dnsrewrite=0.0.0.0
