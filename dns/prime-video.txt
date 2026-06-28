@@ -1,5 +1,5 @@
 ! Prime Video — DNS Ad-Suppression Filter List
-! Version: 4.5  (2026-06-26)
+! Version: 4.5  (2026-06-27)
 ! AdGuard Home syntax. Safe-harbor allows first, then blocks.
 !
 ! Two Ad Pipelines: (1) Java/media3 ad-groups -> bytecode PATCH; (2) native SGAI ->
@@ -34,6 +34,12 @@
 ! SGAI ad decisioning + stitchers (api / ters-sgai1 / ters-draper1 .aiv-delivery)
 ||aiv-delivery.net^$dnsrewrite=0.0.0.0
 ! SGAI ad-media host (Akamai HD) — ads only, distinct from akamaized content
+||*avoddashs3ww-a.akamaihd.net^$dnsrewrite=0.0.0.0
+||*aivottevtad-a.akamaihd.net^$dnsrewrite=0.0.0.0
+||*vod-dash-pv-ta-amazon.akamaized.net^$dnsrewrite=0.0.0.0
+/^a\d+avod.*\.akamaihd\.net$/$dnsrewrite=0.0.0.0
+/^a\d+.*evtad.*\.akamaihd\.net$/$dnsrewrite=0.0.0.0
+/^a\d+.*vottevtad.*\.akamaihd\.net$/$dnsrewrite=0.0.0.0
 /^avoddash.*\.akamaihd\.net$/$dnsrewrite=0.0.0.0
 /.*evtad.*\.akamaihd\.net$/$dnsrewrite=0.0.0.0
 /avoddash.*\.akamaihd\.net$/$dnsrewrite=0.0.0.0
