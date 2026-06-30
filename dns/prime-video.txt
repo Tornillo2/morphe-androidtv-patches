@@ -1,5 +1,5 @@
 ! Prime Video — DNS Ad-Suppression Filter List
-! Version: 4.5  (2026-06-27)
+! Version: 4.6  (2026-06-30)
 ! AdGuard Home syntax. Safe-harbor allows first, then blocks.
 !
 ! Two Ad Pipelines: (1) Java/media3 ad-groups -> bytecode PATCH; (2) native SGAI ->
