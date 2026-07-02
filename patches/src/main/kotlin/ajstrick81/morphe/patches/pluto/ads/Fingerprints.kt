@@ -3,15 +3,39 @@ package ajstrick81.morphe.patches.pluto.ads
 import app.morphe.patcher.Fingerprint
 import com.android.tools.smali.dexlib2.AccessFlags
 
+// ===========================================================================
+// Pluto TV — ad architecture (confirmed by dex disassembly of 5.66.0-leanback)
+//
+// Pluto delivers ads via SERVER-SIDE AD STITCHING (SSAI). The player fetches a
+// "stitcher session" whose HLS manifest already has the ad segments spliced
+// into the content timeline server-side. The client parses that session
+//   StitcherSessionMapper.map(SwaggerStitcherSessionInformation) -> StitcherSession
+// into a client-side ad-break timeline
+//   StitcherSessionMapperUtil.toAdBreak(SwaggerStitcherAdBreak) -> playercommon/data/AdBreak
+// and that timeline drives THREE things, none of which is the ad video itself:
+//   1. ID3-tag beacon tracking   (DefaultSlotAdBreakController.process / BeaconTracker.fire)
+//   2. ad-experience UI overlays (pause ads, ad-pod progress, clickable ads)
+//   3. seek-blocking during breaks
+//
+// Consequence for patching:
+//   - The in-stream ad VIDEO cannot be removed by bytecode; it is baked into
+//     the manifest the same CDN serves the content from. LIVE TV ads occupy
+//     real broadcast wall-clock time in the linear stream and are unremovable
+//     at this layer (same class of problem as Prime Video's native mid-roll).
+//   - What bytecode CAN cleanly kill is the ad-experience chrome + tracking:
+//     pause ads, tracking beacons, and clickable-ad overlays. Those are the
+//     three hooks wired below.
+//   - A VOD-only auto-skip remains a Tier-2 candidate (see note at bottom),
+//     deferred until it can be validated on a device.
+// ===========================================================================
+
 // Hook 1 — BeaconTracker.fire(String adEventName, List urls)
 //
-// Single choke point for ALL server-side-ad-stitching (SSAI) tracking
-// beacons. Pluto bakes ads into the HLS stream server-side and signals ad
-// boundaries with in-stream ID3 tags; every impression/quartile/complete
-// beacon for those stitched ads funnels through this one fire-and-forget
-// method (it builds an RxJava Completable and subscribes, returning void —
-// no caller reads a result). Neutering it silences all ad analytics with
-// zero risk to the playback pipeline.
+// Single choke point for ALL SSAI tracking beacons. Every impression/quartile/
+// complete beacon for stitched ads funnels through this one fire-and-forget
+// method (it builds an RxJava Completable and subscribes, returning void — no
+// caller reads a result). Neutering it silences all ad analytics with zero
+// risk to the playback pipeline. Confirmed: public, returns V.
 object BeaconTrackerFireFingerprint : Fingerprint(
     definingClass = "Ltv/pluto/library/adsbeaconstracking/BeaconTracker;",
     name = "fire",
@@ -29,7 +53,8 @@ object BeaconTrackerFireFingerprint : Fingerprint(
 // Display entry point for pause ads (the full-screen ad image shown when
 // playback is paused). The method both renders the ad bitmap and fires its
 // tracking beacons; returning void up front suppresses the graphic and the
-// beacons in one cut. Pure UI side effect — safe to no-op.
+// beacons in one cut. Pure UI side effect — safe to no-op. Confirmed:
+// public final, returns V.
 object PauseAdsShowFingerprint : Fingerprint(
     definingClass = "Ltv/pluto/feature/leanbackpauseads/binder/PauseAdsImageBinder;",
     name = "showPauseAdImageAfterInactivity",
@@ -41,17 +66,50 @@ object PauseAdsShowFingerprint : Fingerprint(
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL)
 )
 
-// ---------------------------------------------------------------------------
-// Tier 2 candidate — VOD auto-skip (NOT wired yet; needs on-device testing)
+// Hook 3 — ClickableAdsBinder.Companion.bind(...): Disposable
 //
-// Pluto keeps a full client-side ad-break timeline
-// (tv/pluto/library/playercommon/data/AdBreak + AdBreakLocation, and
-// tv/pluto/library/playerui/timebar/rx/AdBreakPositionSource exposing
-// adBreakPositions). The Avia player exposes seekTo(J)Z
-// (tv/pluto/library/player/impl/avia/...). Hooking the ad-break-start
-// observation in AdBreakUseCase / the player mediator to seek to break-end
-// would remove the stitched ad *picture* for VOD. It cannot work for live
-// TV (ads occupy real broadcast wall-clock time). Left unhooked until it
-// can be validated on a device to avoid the suspend/seek regressions the
-// Tubi notes document.
+// Wiring entry point for clickable ("interactive") ad overlays — the prompts
+// shown over content during ad breaks (e.g. "add to watchlist / go to
+// channel"). bind() sets up the whole RxJava subscription graph and returns
+// the Disposable that owns it; the caller just adds that Disposable to a
+// CompositeDisposable. Returning an already-disposed Disposable at offset 0
+// means the feature is never wired at all — no overlay, no clickable-ad
+// analytics — while still honoring the method's contract (the caller gets a
+// valid, harmless Disposable to manage).
+//
+// Verified present in-app: io.reactivex.disposables.Disposables.disposed()
+// returns Lio/reactivex/disposables/Disposable;. Confirmed: public final.
+//
+// NOTE: definingClass uses \$ so Kotlin does not treat $Companion as a string
+// template — it is the literal inner-class name ClickableAdsBinder$Companion.
+object ClickableAdsBindFingerprint : Fingerprint(
+    definingClass = "Ltv/pluto/android/appcommon/clickableads/ClickableAdsBinder\$Companion;",
+    name = "bind",
+    returnType = "Lio/reactivex/disposables/Disposable;",
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL)
+)
+
+// ---------------------------------------------------------------------------
+// Tier 2 candidate — VOD auto-skip (NOT wired; requires on-device validation)
+//
+// Because the ad-break timeline is fully client-side, VOD ads *may* be made
+// invisible by seeking past each break as it starts. The pieces confirmed
+// present in this build:
+//   - Ad-break model + positions:
+//       tv/pluto/library/playercommon/data/AdBreak (+ AdBreakLocation)
+//       built by StitcherSessionMapperUtil.toAdBreak(...)
+//   - A player handle to seek with: IPlayerMediator / IPlayer, exposed to
+//       tv/pluto/feature/leanbackplayercontrols/ui/livetv/usecase/AdBreakUseCase
+//       and to ClickableAdsBinder.bind(...) — both receive the mediator/player,
+//       and IPlayer exposes seekTo.
+// Approach: observe playback progress + the AdBreak list; on entering a break,
+// seekTo(break end).
+//
+// Left unwired on purpose:
+//   - Cannot work for LIVE TV (ads are real broadcast time in the linear feed).
+//   - Pluto stitches ads INTO the segment timeline, so whether a seek to
+//     break-end lands cleanly on buffered content or triggers a rebuffer / ad
+//     re-entry loop is unknown without a device. A bad seek loop is a worse
+//     experience than the ads. This is exactly the suspend/seek regression
+//     class the Tubi and Peacock notes document — validate on hardware first.
 // ---------------------------------------------------------------------------
