@@ -89,6 +89,25 @@ object ClickableAdsBindFingerprint : Fingerprint(
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL)
 )
 
+// Hook 4 — StitcherSession.getAdBreaks(): List
+//
+// The parsed stitcher-session model. Its `adBreaks` list is the client-side
+// ad-break timeline that AdGuard Premium strips on the wire
+// (||pluto.tv/*/session.json$jsonprune=$.adBreaks.*) to suppress Pluto ads.
+// This getter is the single choke point every consumer reads it through
+// (timebar AdBreakPositionSource, DefaultSlotAdBreakController /
+// ID3AdsBeaconTracker, and the player's ad handling). Forcing it to return an
+// empty list is the in-app equivalent of that jsonprune. Confirmed present in
+// 5.66.0-leanback at tv/pluto/library/playercommon/data/StitcherSession;
+// public final, .locals 1, returns Ljava/util/List;.
+object StitcherSessionGetAdBreaksFingerprint : Fingerprint(
+    definingClass = "Ltv/pluto/library/playercommon/data/StitcherSession;",
+    name = "getAdBreaks",
+    parameters = listOf(),
+    returnType = "Ljava/util/List;",
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL)
+)
+
 // ---------------------------------------------------------------------------
 // Tier 2 candidate — VOD auto-skip (NOT wired; requires on-device validation)
 //

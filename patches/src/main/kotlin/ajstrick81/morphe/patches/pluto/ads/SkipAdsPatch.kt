@@ -7,10 +7,12 @@ import ajstrick81.morphe.patches.pluto.shared.Constants
 @Suppress("unused")
 val skipAdsPatch = bytecodePatch(
     name = "Skip ads",
-    description = "Suppresses Pluto TV's ad experience — tracking beacons, pause ads, " +
-        "and clickable-ad overlays. Pluto stitches ad video into the stream server-side " +
-        "(SSAI), so in-stream ads (especially live TV) are not removable at the bytecode " +
-        "layer; pair with DNS filtering for third-party trackers. Validated 5.66.0-leanback.",
+    description = "Suppresses Pluto TV's ads. Empties the client-side ad-break timeline " +
+        "(StitcherSession.adBreaks) — the same data AdGuard strips via jsonprune — which " +
+        "removes on-demand (VOD) ad breaks entirely: ad video, markers, overlays, and " +
+        "beacons. Also no-ops pause ads and clickable-ad overlays. LIVE TV ads are real " +
+        "broadcast time in the linear feed and are not removable. Validated on-device, " +
+        "5.66.0-leanback.",
 ) {
     compatibleWith(Constants.COMPATIBILITY)
 
@@ -39,6 +41,25 @@ val skipAdsPatch = bytecodePatch(
             0,
             """
                 invoke-static {}, Lio/reactivex/disposables/Disposables;->disposed()Lio/reactivex/disposables/Disposable;
+                move-result-object v0
+                return-object v0
+            """,
+        )
+
+        // Hook 4 — StitcherSession.getAdBreaks() -> empty list
+        // Reproduces AdGuard Premium's proven suppression in bytecode: its
+        // filtering log strips the ad-break timeline from the stitcher session
+        // response (||pluto.tv/*/session.json$jsonprune=$.adBreaks.*). This is
+        // the in-app equivalent at the single client-side model choke point —
+        // every consumer of the parsed StitcherSession (timebar
+        // AdBreakPositionSource, the ID3/slot beacon controllers, and the
+        // player's ad-break handling) reads the breaks through this getter, so
+        // returning an empty list de-schedules the entire ad experience.
+        // getAdBreaks() has .locals 1, so v0 is valid at entry.
+        StitcherSessionGetAdBreaksFingerprint.method.addInstructions(
+            0,
+            """
+                invoke-static {}, Ljava/util/Collections;->emptyList()Ljava/util/List;
                 move-result-object v0
                 return-object v0
             """,
