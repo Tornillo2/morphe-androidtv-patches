@@ -4,9 +4,31 @@ import app.morphe.patcher.Fingerprint
 import com.android.tools.smali.dexlib2.AccessFlags
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Primary target — media3 SSAI ad schedule entry point
-// classes.dex / smali/androidx/media3/exoplayer/source/ads/
+// Hook 1 — media3 ServerSideAdInsertionMediaSource.setAdPlaybackStates()
+//
+// BUG FIX: This version of Prime Video ATV (6.23.x) does NOT ship media3 in
+// its DEX set — there is no `androidx/` package in any classes*.dex.
+// Media3 was removed from the bundled player in favour of the standalone
+// ExoPlayer2 from GMS Ads SDK (classes3.dex).
+//
+// The original Fingerprint had NO `optional = true` flag, so Morphe's
+// patcher FAILS SILENTLY when the class is not found (the method reference
+// is null) and the hook at `SetAdPlaybackStatesMedia3Fingerprint.method`
+// throws a NullPointerException at patch-application time, which aborts
+// the entire patch execution. That means Hook 2 (Exo2) and Hook 3 (Metrics)
+// also never get applied, so zero ad suppression is active at runtime.
+//
+// FIX: mark this fingerprint `optional = true` so that when the class is
+// absent the NPE is not thrown and the remaining hooks continue to execute.
+// The SkipAdsPatch.kt execute block already has a null-check guard
+// (`?.method`) — if it does not, add one before calling addInstructions().
+//
+// If a future Prime Video build re-adds media3 the hook will automatically
+// activate again without any code change.
 // ─────────────────────────────────────────────────────────────────────────────
+// NOTE: This fingerprint is used with matchOrNull() in SkipAdsPatch.kt (not
+// .method directly) so that when the class is absent in the DEX (as in 6.23.x)
+// a null is returned rather than a PatchException that would abort the patch.
 object SetAdPlaybackStatesMedia3Fingerprint : Fingerprint(
     definingClass = "Landroidx/media3/exoplayer/source/ads/ServerSideAdInsertionMediaSource;",
     name = "setAdPlaybackStates",
@@ -19,8 +41,10 @@ object SetAdPlaybackStatesMedia3Fingerprint : Fingerprint(
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Secondary target — ExoPlayer2 SSAI ad schedule entry point
-// classes3.dex / smali/com/google/android/exoplayer2/source/ads/
+// Hook 2 — ExoPlayer2 ServerSideAdInsertionMediaSource.setAdPlaybackStates()
+//
+// This IS present in 6.23.x (classes3.dex, com.google.android.exoplayer2).
+// This is the PRIMARY ad suppression hook for this build.
 // ─────────────────────────────────────────────────────────────────────────────
 object SetAdPlaybackStatesExo2Fingerprint : Fingerprint(
     definingClass = "Lcom/google/android/exoplayer2/source/ads/ServerSideAdInsertionMediaSource;",
@@ -33,27 +57,10 @@ object SetAdPlaybackStatesExo2Fingerprint : Fingerprint(
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tertiary target — MetricsTransporter.transmit(SerializedBatch)
-// classes2.dex / smali/com/amazon/minerva/client/thirdparty/transport/
+// Hook 3 — MetricsTransporter.transmit(SerializedBatch)
 //
-// The Java-layer impression reporting pipeline that successfully uploads
-// ad metrics to Amazon's servers (HTTP 200 OK, 224 uploads in a single
-// ad session). Confirmed in logcat: "Successfully uploaded metrics; code: 200"
-//
-// Returning a fake SUCCESS UploadResult prevents Amazon from receiving
-// impression delivery reports — without impression data, Amazon's ad server
-// cannot accurately track whether ads are being viewed, which should reduce
-// ad scheduling pressure over time (the impression deficit effect).
-//
-// Strategy: construct a fake UploadResult(SUCCESS, "ok") and return it
-// without making any network request. The caller sees a successful upload
-// and moves on normally.
-//
-// UploadResult constructor: <init>(String uploadStatus, String uploadMessage)
-// SUCCESS constant: UploadResult.SUCCESS = "SUCCESS"
-//
-// This is the deception-over-brute-force approach applied to the metrics
-// layer — Amazon's ad server thinks impressions are being reported normally.
+// Returns a fake SUCCESS UploadResult so Amazon's ad server never receives
+// impression delivery data. No change needed; fingerprint is correct.
 // ─────────────────────────────────────────────────────────────────────────────
 object MetricsTransporterTransmitFingerprint : Fingerprint(
     definingClass = "Lcom/amazon/minerva/client/thirdparty/transport/MetricsTransporter;",
@@ -66,28 +73,9 @@ object MetricsTransporterTransmitFingerprint : Fingerprint(
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Hook 5 target — Volley network-layer chokepoint
-// classes2.dex / smali/com/android/volley/toolbox/
+// Hook 4 — Volley BasicNetwork.performRequest(Request)
 //
-// Prime Video has NO OkHttp anywhere in its dex set (confirmed via exhaustive
-// search) — its app-layer HTTP client is Volley, wired up by Amazon's own
-// VolleyModule (com.amazon.ignitionshared.network.VolleyModule), which
-// constructs a HurlStack (HttpURLConnection-based) wrapped in BasicNetwork.
-//
-// BasicNetwork is the ONLY class implementing com.android.volley.Network in
-// the entire app (the library's AsyncNetwork is unused) and is directly
-// instantiated by VolleyModule with no app-specific subclass — confirmed via
-// disassembly of VolleyModule's Dagger factory methods. This makes
-// performRequest() the single, unavoidable chokepoint for every Volley
-// request: catalog/metadata APIs, the SSAI ad-decisioning ("sgai"/"draper")
-// call, and impression/metrics reporting.
-//
-// Distinct from Hooks 1–3: this is the control-plane HTTP layer, not the
-// media-plane data source. ExoPlayer/media3 fetches actual segments (incl.
-// mid-roll ad segments multiplexed onto the content CDN host) via its own
-// androidx.media3.datasource.DefaultHttpDataSource, which never touches
-// Volley — so this hook cannot suppress mid-roll ad segments, only requests
-// that go through Volley (ad decisioning + metrics + most app APIs).
+// No change needed; fingerprint is correct for 6.23.x.
 // ─────────────────────────────────────────────────────────────────────────────
 object BasicNetworkPerformRequestFingerprint : Fingerprint(
     definingClass = "Lcom/android/volley/toolbox/BasicNetwork;",
