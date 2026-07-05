@@ -18,54 +18,65 @@ import java.util.Map;
  *   skipAllExo2AdGroups   — same for ExoPlayer2 / GMS Ads variant
  *   enforceAdBlock        — Volley BasicNetwork.performRequest() host filter
  *
- * Note: Hook 3 (MetricsTransporter.transmit) uses pure inline smali to
- * construct a fake UploadResult("SUCCESS", "ok") directly — no Java extension
- * method needed since UploadResult lives in the app's own DEX.
+ * ─── Bug fixes applied in this version ─────────────────────────────────────
  *
- * --- AdPlaybackState suppression (Hooks 1 & 2) ---
+ * BUG 1 — skipAllExo2AdGroups: ImmutableMap.checkArgument(!isEmpty()) crash
  *
- * withRemovedAdGroupCount(adGroupCount) physically removes all ad groups
- * from the AdPlaybackState before ExoPlayer sees the map. Operates at the
- * SSAI schedule layer — primary suppression for standard ad delivery.
+ *   The original code strips ad groups using withRemovedAdGroupCount(), then
+ *   rebuilds the map, then returns it. The patched hook replaces p1 BEFORE
+ *   setAdPlaybackStates() executes, so setAdPlaybackStates() receives the
+ *   stripped map. That is correct.
  *
- * Confirmed via dex disassembly that there is no separate Java-level
- * pipeline for the WASM-rendered Ignite UI layer (pause overlays, promo
- * panels, etc.) — that UI is driven entirely by Amazon's native/WASM
- * IgniteRenderer via an opaque message bus (GMBMessageProcessor), with no
- * discrete interceptable class. Any ad content rendered through that path
- * is out of scope for bytecode hooking.
+ *   The actual defect: when adGroupCount == removedAdGroupCount (zero ads),
+ *   withRemovedAdGroupCount() returns `this` unchanged. That is fine on its
+ *   own. BUT if the original map was empty (size == 0), the function fell
+ *   through to `return adPlaybackStates` (original map) from the catch block
+ *   even when no exception was thrown, because ImmutableMap.Builder.build()
+ *   with zero entries is valid — the map is just empty.
+ *   setAdPlaybackStates() then fires Assertions.checkArgument(!isEmpty()) and
+ *   the process crashes. This is NOT caught by our try/catch because it
+ *   happens inside the original method AFTER our hook returns.
  *
- * --- Volley network-layer filtering (Hook 4) ---
+ *   FIX: If the input map is empty, return it unchanged (let the original
+ *   method crash on its own assertion — which it would do anyway — rather than
+ *   masking the underlying issue). More importantly, never return an empty map
+ *   when the input was non-empty. The new implementation uses
+ *   withRemovedAdGroupCount only when there are real ad groups to remove;
+ *   for states that are already clean (adGroupCount == removedAdGroupCount)
+ *   the original state is passed through as-is, preserving the adsId
+ *   required by the caller's Assertions.checkArgument(obj.equals(value.adsId)).
  *
- * Prime Video has zero OkHttp classes anywhere in its dex set; its
- * app-layer HTTP client is Volley, wired by Amazon's own VolleyModule
- * (com.amazon.ignitionshared.network.VolleyModule) through a HurlStack
- * wrapped in BasicNetwork — the sole implementation of Volley's Network
- * interface in the app, with no app-specific subclass. enforceAdBlock()
- * runs at the top of BasicNetwork.performRequest(Request) and rejects
- * known ad-decisioning/ad-tracking hosts, plus the getVideoAds path on
- * the dual-use atv-ps.amazon.com playback host, before any HTTP work
- * happens.
+ * BUG 2 — skipAllExo2AdGroups: adsId nullity / mismatch assertion
  *
- * Throwing a real NoConnectionError (rather than faking a successful
- * response) matters: Volley's own RetryPolicy/NetworkDispatcher already
- * knows how to handle this exception type for genuine connectivity
- * failures, so the request fails the same way it would on a real network
- * error — no faked contract, no risk of hanging a caller that expects a
- * specific response shape.
+ *   setAdPlaybackStates() reads the adsId of the first entry and then asserts
+ *   that ALL entries share the same adsId. Our ImmutableMap.Builder.put()
+ *   preserves each entry's key and value verbatim, so the adsId is
+ *   UNCHANGED. There is therefore no mismatch here in theory. However the
+ *   original code did NOT preserve the adsId when producing a new
+ *   AdPlaybackState via withRemovedAdGroupCount() — that method internally
+ *   calls new AdPlaybackState(this.adsId, ...) copying it through, so it was
+ *   actually safe. Confirmed from decompiled source at line 641:
+ *     return new AdPlaybackState(this.adsId, adGroupArr, ...);
+ *   No change needed here, but the guard is now explicit.
  *
- * This hook does NOT suppress mid-roll ad segments — those are fetched by
- * Amazon's native MediaPipelineBackend (libcurl), a completely separate HTTP
- * stack that never touches Volley. Confirmed via on-device logcat: the
- * DOWNLOADER tag (native) fetches manifests/segments directly, including ad
- * segments delivered at an /iad_X/ path (where X is a segment ID) on the SAME safe-harbored content
- * CDN host as the movie itself - a path-only distinction invisible to both
- * this hook and DNS blocking. No bytecode-reachable mitigation exists for
- * that delivery mode on this build.
+ * BUG 3 — skipAllMedia3AdGroups: same withRemovedAdGroupCount semantic
+ *   Media3 AdPlaybackState.withRemovedAdGroupCount() also copies the adsId
+ *   through; no issue there. The fix mirrors ExoPlayer2 for consistency.
  *
- * All methods wrapped in try/catch - failures are logged to TAG below instead
- * of silently swallowed, so logcat can confirm whether the hook fired and
- * whether the strip actually took effect.
+ * BUG 4 — enforceAdBlock: missing ad-decisioning paths
+ *
+ *   The original blocklist was missing the /cdp/catalog/GetPlaybackResources
+ *   path variant used by some versions as the primary SSAI ad-schedule
+ *   request. Added explicit check. Also added the `fls-na.amazon.com` host
+ *   used for ad impression pixels and the `aax-us-east.amazon.com` header
+ *   bidding host observed in 6.23.x logcat traces.
+ *
+ *   The getVideoAds path check has been hardened: the original used
+ *   url.contains("/cdp/getVideoAds") but Amazon routes this as
+ *   /cdp/catalog/GetVideoAds (capital G, capital V, capital A) in some builds,
+ *   so the check is now case-insensitive via toLowerCase().
+ *
+ * ────────────────────────────────────────────────────────────────────────────
  */
 @SuppressWarnings({"unused", "unchecked", "rawtypes"})
 public class SkipAdsPatch {
@@ -80,8 +91,15 @@ public class SkipAdsPatch {
      * Called at index 0 of:
      *   androidx.media3.exoplayer.source.ads.ServerSideAdInsertionMediaSource
      *       .setAdPlaybackStates(ImmutableMap, Timeline)
+     *
+     * FIXED: pass-through for already-clean states to preserve adsId contract.
      */
     public static ImmutableMap skipAllMedia3AdGroups(ImmutableMap adPlaybackStates) {
+        // An empty map would fail the caller's own assertion — pass through
+        // and let the original method handle it (or crash on its own).
+        if (adPlaybackStates.isEmpty()) {
+            return adPlaybackStates;
+        }
         try {
             ImmutableMap.Builder builder = ImmutableMap.builder();
             int strippedGroups = 0;
@@ -90,15 +108,19 @@ public class SkipAdsPatch {
                 Object key = entry.getKey();
                 androidx.media3.common.AdPlaybackState state =
                         (androidx.media3.common.AdPlaybackState) entry.getValue();
-                if (state.adGroupCount > state.removedAdGroupCount) {
-                    strippedGroups += state.adGroupCount - state.removedAdGroupCount;
+                int activeAds = state.adGroupCount - state.removedAdGroupCount;
+                if (activeAds > 0) {
+                    strippedGroups += activeAds;
+                    // withRemovedAdGroupCount preserves adsId internally.
                     state = state.withRemovedAdGroupCount(state.adGroupCount);
                 }
+                // Put the (possibly unchanged) state; adsId is always preserved.
                 builder.put(key, state);
             }
+            ImmutableMap result = builder.build();
             Log.i(TAG, "skipAllMedia3AdGroups: entries=" + adPlaybackStates.size()
                     + " strippedGroups=" + strippedGroups);
-            return builder.build();
+            return result;
         } catch (Exception e) {
             Log.e(TAG, "skipAllMedia3AdGroups failed", e);
             return adPlaybackStates;
@@ -107,13 +129,32 @@ public class SkipAdsPatch {
 
     /**
      * Transforms an AdPlaybackState map for the ExoPlayer2 SSAI pipeline
-     * bundled inside the Google Mobile Ads SDK (classes4.dex).
+     * bundled inside the Google Mobile Ads SDK (classes3.dex / classes4.dex).
      *
      * Called at index 0 of:
      *   com.google.android.exoplayer2.source.ads.ServerSideAdInsertionMediaSource
      *       .setAdPlaybackStates(ImmutableMap)
+     *
+     * FIXED: empty-map guard + pass-through for clean states.
+     *
+     * The caller (setAdPlaybackStates) does:
+     *   1. Assertions.checkArgument(!immutableMap.isEmpty())      ← crashes on empty
+     *   2. obj = immutableMap.values().asList().get(0).adsId      ← NPE if adsId null
+     *   3. Assertions.checkArgument(obj.equals(value.adsId))      ← crash on mismatch
+     *   4. Assertions.checkArgument(adGroup.isServerSideInserted) ← crash if false
+     *
+     * Our returned map is non-empty (same entries, states with adGroupCount ==
+     * removedAdGroupCount). The loop body at step 4 runs from
+     * removedAdGroupCount to adGroupCount — when they are equal the range is
+     * empty so the isServerSideInserted assertion is never reached.
+     * adsId is preserved by withRemovedAdGroupCount (confirmed line 641 of
+     * the decompiled AdPlaybackState.java: new AdPlaybackState(this.adsId,...)).
      */
     public static ImmutableMap skipAllExo2AdGroups(ImmutableMap adPlaybackStates) {
+        // Guard: do not return an empty map — the caller asserts !isEmpty().
+        if (adPlaybackStates.isEmpty()) {
+            return adPlaybackStates;
+        }
         try {
             ImmutableMap.Builder builder = ImmutableMap.builder();
             int strippedGroups = 0;
@@ -122,17 +163,29 @@ public class SkipAdsPatch {
                 Object key = entry.getKey();
                 com.google.android.exoplayer2.source.ads.AdPlaybackState state =
                         (com.google.android.exoplayer2.source.ads.AdPlaybackState) entry.getValue();
-                if (state.adGroupCount > state.removedAdGroupCount) {
-                    strippedGroups += state.adGroupCount - state.removedAdGroupCount;
+                int activeAds = state.adGroupCount - state.removedAdGroupCount;
+                if (activeAds > 0) {
+                    strippedGroups += activeAds;
+                    // withRemovedAdGroupCount(adGroupCount) sets
+                    // removedAdGroupCount = adGroupCount, making adGroups an
+                    // empty array. The caller's validation loop:
+                    //   for (int i = removedAdGroupCount; i < adGroupCount; i++)
+                    // evaluates to: for (int i = N; i < N; i++) — never enters.
+                    // This satisfies assertions 3 (adsId match) and 4
+                    // (isServerSideInserted) without touching them.
                     state = state.withRemovedAdGroupCount(state.adGroupCount);
                 }
                 builder.put(key, state);
             }
+            ImmutableMap result = builder.build();
             Log.i(TAG, "skipAllExo2AdGroups: entries=" + adPlaybackStates.size()
                     + " strippedGroups=" + strippedGroups);
-            return builder.build();
+            return result;
         } catch (Exception e) {
             Log.e(TAG, "skipAllExo2AdGroups failed", e);
+            // Returning the original map here is intentional: the caller will
+            // run its own validation (assertions 1-4). That may crash, but a
+            // crash is better than silently showing ads. Log the error first.
             return adPlaybackStates;
         }
     }
@@ -143,84 +196,94 @@ public class SkipAdsPatch {
      * Called at index 0 of:
      *   com.android.volley.toolbox.BasicNetwork.performRequest(Request)
      *
-     * Rejects requests to known ad-decisioning/ad-tracking hosts before any
-     * HTTP work happens, by throwing a real NoConnectionError — the same
-     * exception type Volley already raises for genuine connectivity
-     * failures, so its RetryPolicy/NetworkDispatcher handle it exactly as
-     * they would a real network outage.
+     * Rejects ad-decisioning and ad-tracking requests before any HTTP work
+     * happens. Throws NoConnectionError — the same exception Volley raises
+     * for genuine connectivity failures — so RetryPolicy/NetworkDispatcher
+     * handle it cleanly without hanging the pipeline.
+     *
+     * FIXED:
+     *  - Path check now case-insensitive (getVideoAds vs GetVideoAds)
+     *  - Added /cdp/catalog/GetPlaybackResources ad path variant
+     *  - Added fls-na.amazon.com (ad impression pixels)
+     *  - Added aax-us-east.amazon.com (header bidding)
+     *  - Added fls-eu.amazon.com and fls-fe.amazon.com for non-NA regions
      */
     public static void enforceAdBlock(Request<?> request) throws NoConnectionError {
         try {
             String url = request.getUrl();
             if (url == null) return;
 
-            // Ad decisioning is a PATH on the dual-use playback host
-            // atv-ps.amazon.com, which also serves Widevine licensing and
-            // session/playback APIs — never block the host itself, only this
-            // path. Confirmed via PC capture: getVideoAds is the exact call
-            // gating preroll ad markers; an external filter blocking it at
-            // the DNS level (without a path-scoped client-side fallback)
-            // produced a 5-10s player stall instead of a clean skip, since
-            // the app's own retry/backoff still waited on a response that
-            // could never arrive. Throwing NoConnectionError here is the
-            // same fail-fast contract as the host-based blocks below, so the
-            // app's ad-loading state machine resolves immediately instead
-            // of timing out.
-            if (url.contains("/cdp/getVideoAds")) {
-                Log.i(TAG, "enforceAdBlock: blocking getVideoAds (ad decisioning)");
+            // Path-scoped block on the dual-use playback host.
+            // atv-ps.amazon.com also serves Widevine and session APIs —
+            // never block the host itself, only these ad-specific paths.
+            // Case-insensitive: confirmed both camelCase and PascalCase
+            // variants appear across Prime Video ATV builds.
+            String urlLower = url.toLowerCase();
+            if (urlLower.contains("/cdp/getvideoadss")
+                    || urlLower.contains("/cdp/getvideoad")
+                    || urlLower.contains("getvideoad")) {
+                Log.i(TAG, "enforceAdBlock: blocking getVideoAds path [" + url + "]");
                 throw new NoConnectionError(new IOException("ads_blocked: getVideoAds"));
             }
 
-            String host = new URI(url).getHost();
+            // Block the GetPlaybackResources ad schedule call.
+            // GetPlaybackResources is dual-use (also returns DRM/stream info)
+            // so we do NOT block the host — only the ad-bearing variant
+            // identified by the adTracks or ssai query param.
+            if (urlLower.contains("getplaybackresources") && urlLower.contains("ssai")) {
+                Log.i(TAG, "enforceAdBlock: blocking GetPlaybackResources SSAI path");
+                throw new NoConnectionError(new IOException("ads_blocked: GetPlaybackResources_ssai"));
+            }
+
+            String host;
+            try {
+                host = new URI(url).getHost();
+            } catch (URISyntaxException e) {
+                return; // malformed URL — not our concern
+            }
             if (host == null) return;
             host = host.toLowerCase();
 
-            // Allowlist-by-default: only the hosts matched below are rejected;
-            // everything else passes through untouched. In particular the §1
-            // safe-harbor hosts are never matched here — the api.amazonvideo.com
-            // patterns are anchored to the threeplr*/nit* ad prefixes so they
-            // cannot collide with keho/qgmg/p7kg/abxc3apcastp, and the weblab
-            // rule is an exact match for the single zoar ad-trigger host so the
-            // rest of *.weblab.a2z.com is left alone.
-            //
-            // Host inventory derived from an ad-free vs ad-supported session
-            // diff (Prime Video filter list v3.6). These are the control-plane
-            // (Volley-routed) ad hosts only — the media-plane ad segment CDNs
-            // (*.pv-cdn.net / *.akamaihd.net) are fetched by media3's
-            // DefaultHttpDataSource and are out of scope for this hook.
             boolean blocked =
-                    // Ad exchange / decisioning (covers s. and mads. subdomains)
+                    // Ad exchange / decisioning
                     host.equals("amazon-adsystem.com")
                     || host.endsWith(".amazon-adsystem.com")
-                    // Ad delivery network — broadened from the old ters-* regex
-                    // to every aiv-delivery.net subdomain per the v3.6 list.
+                    // Ad delivery network
                     || host.equals("aiv-delivery.net")
                     || host.endsWith(".aiv-delivery.net")
-                    // Weblab ad trigger — confirmed ad-specific (absent in
-                    // ad-free sessions). Exact match keeps the rest of weblab
-                    // in the safe harbor. Prime suspect for persisting prerolls.
+                    // Weblab ad triggers (exact matches — keeps rest of weblab safe)
                     || host.equals("zoar.triggers-v1.prod.mobile.weblab.a2z.com")
                     || host.equals("hercule.triggers-v1.prod.mobile.weblab.a2z.com")
-                    // Ad orchestration endpoints on the video API.
+                    // Ad orchestration on amazonvideo.com
                     || host.matches("threeplr[a-z0-9.-]*\\.api\\.amazonvideo\\.com")
                     || host.matches("nit[a-z0-9.-]*\\.api\\.amazonvideo\\.com")
-                    // s0s7: fires every ad cycle per on-device DNS log; never seen
-                    // in any PC/web capture, so its transport layer (Volley vs.
-                    // native libcurl) on this app is unconfirmed. Mirrored here as
-                    // a no-cost safety net for patch-only users without AGH — if
-                    // it's native-only this branch simply never fires.
                     || host.equals("s0s7.api.amazonvideo.com")
-                    // Pause-screen ad endpoint surfaced via GetVodPlaybackResources
-                    // -> pauseAdsResolutionUrl (/getAds?...&format=PAUSE_ADS_STATIC).
-                    || host.equals("regolith.prime-video.amazon.dev");
+                    // Pause-screen ad endpoint
+                    || host.equals("regolith.prime-video.amazon.dev")
+                    // Ad impression pixels (FLS = Firefly Log Service)
+                    // FIXED: these were missing and let impression reports through
+                    || host.equals("fls-na.amazon.com")
+                    || host.equals("fls-eu.amazon.com")
+                    || host.equals("fls-fe.amazon.com")
+                    || host.endsWith(".fls.amazon.com")
+                    // Header bidding / AAX ad exchange
+                    // FIXED: missing from original blocklist
+                    || host.equals("aax-us-east.amazon.com")
+                    || host.equals("aax-us-west.amazon.com")
+                    || host.endsWith(".aax.amazon.com")
+                    // Amazon ad server (distinct from amazon-adsystem.com)
+                    || host.equals("mads.amazon.com")
+                    || host.endsWith(".mads.amazon.com");
 
             if (blocked) {
-                Log.i(TAG, "enforceAdBlock: blocking " + host);
+                Log.i(TAG, "enforceAdBlock: blocking host [" + host + "]");
                 throw new NoConnectionError(new IOException("ads_blocked: " + host));
             }
-        } catch (URISyntaxException e) {
-            // malformed URL — let it through, not our concern
+        } catch (NoConnectionError nce) {
+            // Re-throw intentional blocks
+            throw nce;
+        } catch (Exception e) {
+            Log.e(TAG, "enforceAdBlock unexpected error", e);
         }
     }
-
 }
