@@ -19,10 +19,19 @@ val skipAdsPatch = bytecodePatch(
         // ─────────────────────────────────────────────────────────────────────
         // Hook 1 — media3 ServerSideAdInsertionMediaSource.setAdPlaybackStates()
         //
-        // Strips all AdGroups from the incoming SSAI ad schedule before
-        // ExoPlayer sees it. Primary suppression for standard SSAI path.
+        // BUG FIX: Prime Video ATV 6.23.x does NOT ship media3 in any DEX file
+        // (no androidx/ package exists). The original code called
+        // SetAdPlaybackStatesMedia3Fingerprint.method which internally does
+        //   matchOrNull() ?: throw PatchException(...)
+        // This PatchException was thrown and aborted the entire execute{} block,
+        // silently preventing Hooks 2, 3, and 4 from ever being applied —
+        // which is why ads still showed after patching.
+        //
+        // FIX: Use matchOrNull() directly and skip the hook if the class is
+        // absent. If a future Prime Video build ships media3 again the hook
+        // will activate automatically without any code change.
         // ─────────────────────────────────────────────────────────────────────
-        SetAdPlaybackStatesMedia3Fingerprint.method.addInstructions(
+        SetAdPlaybackStatesMedia3Fingerprint.matchOrNull()?.method?.addInstructions(
             0,
             """
                 invoke-static/range {p1 .. p1}, Lajstrick81/morphe/extension/primevideo/ads/SkipAdsPatch;->skipAllMedia3AdGroups(Lcom/google/common/collect/ImmutableMap;)Lcom/google/common/collect/ImmutableMap;
@@ -33,7 +42,10 @@ val skipAdsPatch = bytecodePatch(
         // ─────────────────────────────────────────────────────────────────────
         // Hook 2 — ExoPlayer2 ServerSideAdInsertionMediaSource.setAdPlaybackStates()
         //
-        // Same strategy for the GMS Ads SDK ExoPlayer2 variant.
+        // PRIMARY hook for 6.23.x. The extension method skipAllExo2AdGroups()
+        // now correctly guards against empty maps (which would re-trigger the
+        // caller's Assertions.checkArgument(!isEmpty()) crash) and preserves
+        // the adsId contract required by the caller's subsequent assertions.
         // ─────────────────────────────────────────────────────────────────────
         SetAdPlaybackStatesExo2Fingerprint.method.addInstructions(
             0,
@@ -47,12 +59,9 @@ val skipAdsPatch = bytecodePatch(
         // Hook 3 — MetricsTransporter.transmit(SerializedBatch)
         //
         // Returns a fake SUCCESS UploadResult without making any network
-        // request. Amazon's ad server receives no impression delivery data,
-        // preventing it from accurately tracking ad viewing and reducing
-        // scheduled ad load over time.
-        //
-        // Inline smali constructs UploadResult("SUCCESS", "ok") directly —
-        // no extension class needed since UploadResult is in the app's own DEX.
+        // request. UploadResult lives in the app's own DEX so we construct
+        // it with inline smali — no extension method needed.
+        // No changes from original.
         // ─────────────────────────────────────────────────────────────────────
         MetricsTransporterTransmitFingerprint.method.addInstructions(
             0,
@@ -68,17 +77,9 @@ val skipAdsPatch = bytecodePatch(
         // ─────────────────────────────────────────────────────────────────────
         // Hook 4 — Volley BasicNetwork.performRequest(Request)
         //
-        // Inspects every Volley request's URL host before it leaves the
-        // device. Known ad-decisioning / ad-tracking hosts are rejected with
-        // a real NoConnectionError, which Volley's own RetryPolicy already
-        // knows how to handle gracefully (same as a genuine connectivity
-        // failure) — no faked contract, no hung pipeline.
-        //
-        // This is the control-plane equivalent of Hooks 1–3: it catches the
-        // SSAI ad-decisioning call and any other Volley-routed ad traffic
-        // that the AdPlaybackState/metrics hooks don't cover. It does NOT
-        // suppress mid-roll ad segments — those are fetched by ExoPlayer's
-        // own media3 DefaultHttpDataSource, which never touches Volley.
+        // Network-layer host/path filter. The extension method enforceAdBlock()
+        // now also blocks FLS impression pixels, AAX header-bidding hosts, and
+        // handles both camelCase and PascalCase getVideoAds path variants.
         // ─────────────────────────────────────────────────────────────────────
         BasicNetworkPerformRequestFingerprint.method.addInstructions(
             0,
