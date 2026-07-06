@@ -1,6 +1,5 @@
 # 1.0.0 (2026-07-05)
 
-
 ### Bug Fixes
 
 * Add ad suppression hooks for Tubi video player ([13b66fa](https://github.com/Tornillo2/morphe-androidtv-patches/commit/13b66fa1a4b5d62e5e6ef9beb4a6257c4ae904e7))
