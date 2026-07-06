@@ -1,0 +1,35 @@
+package com.google.android.gms.internal.ads;
+
+import android.os.Bundle;
+import android.os.Parcel;
+import android.os.Parcelable;
+import com.google.android.gms.common.internal.safeparcel.AbstractSafeParcelable;
+import com.google.android.gms.common.internal.safeparcel.SafeParcelWriter;
+import com.google.android.gms.common.internal.safeparcel.SafeParcelable;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes3.dex */
+@SafeParcelable.Class(creator = "MediationConfigurationParcelCreator")
+public final class zzbko extends AbstractSafeParcelable {
+    public static final Parcelable.Creator<zzbko> CREATOR = new zzbkp();
+
+    @SafeParcelable.Field(id = 1)
+    public final String zza;
+
+    @SafeParcelable.Field(id = 2)
+    public final Bundle zzb;
+
+    @SafeParcelable.Constructor
+    public zzbko(@SafeParcelable.Param(id = 1) String str, @SafeParcelable.Param(id = 2) Bundle bundle) {
+        this.zza = str;
+        this.zzb = bundle;
+    }
+
+    @Override // android.os.Parcelable
+    public final void writeToParcel(Parcel parcel, int i) {
+        int iZza = SafeParcelWriter.zza(parcel, 20293);
+        SafeParcelWriter.writeString(parcel, 1, this.zza, false);
+        SafeParcelWriter.writeBundle(parcel, 2, this.zzb, false);
+        SafeParcelWriter.zzb(parcel, iZza);
+    }
+}

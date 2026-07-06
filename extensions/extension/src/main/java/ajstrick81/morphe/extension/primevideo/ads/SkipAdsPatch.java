@@ -227,13 +227,17 @@ public class SkipAdsPatch {
             }
 
             // Block the GetPlaybackResources ad schedule call.
-            // GetPlaybackResources is dual-use (also returns DRM/stream info)
-            // so we do NOT block the host — only the ad-bearing variant
-            // identified by the adTracks or ssai query param.
-            if (urlLower.contains("getplaybackresources") && urlLower.contains("ssai")) {
-                Log.i(TAG, "enforceAdBlock: blocking GetPlaybackResources SSAI path");
-                throw new NoConnectionError(new IOException("ads_blocked: GetPlaybackResources_ssai"));
+            // Prime Video uses GetPlaybackResources for SSAI scheduling.
+            // In some builds the ad indicator query param is NOT consistently named
+            // (sometimes ssai, sometimes adTracks or other variants), so requiring "ssai"
+            // makes this filter miss the real ad call.
+            //
+            // We keep the host unblocked and key off the specific endpoint only.
+            if (urlLower.contains("getplaybackresources")) {
+                Log.i(TAG, "enforceAdBlock: blocking GetPlaybackResources [" + url + "]");
+                throw new NoConnectionError(new IOException("ads_blocked: GetPlaybackResources"));
             }
+
 
             String host;
             try {

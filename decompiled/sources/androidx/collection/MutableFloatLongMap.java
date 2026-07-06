@@ -1,0 +1,419 @@
+package androidx.collection;
+
+import kotlin.PublishedApi;
+import kotlin.collections.ArraysKt___ArraysJvmKt;
+import kotlin.jvm.functions.Function0;
+import kotlin.jvm.functions.Function2;
+import kotlin.jvm.internal.DefaultConstructorMarker;
+import kotlin.jvm.internal.Intrinsics;
+import kotlin.jvm.internal.SourceDebugExtension;
+import org.jetbrains.annotations.NotNull;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes.dex */
+@SourceDebugExtension({"SMAP\nFloatLongMap.kt\nKotlin\n*S Kotlin\n*F\n+ 1 FloatLongMap.kt\nandroidx/collection/MutableFloatLongMap\n+ 2 fake.kt\nkotlin/jvm/internal/FakeKt\n+ 3 ScatterMap.kt\nandroidx/collection/ScatterMapKt\n+ 4 FloatLongMap.kt\nandroidx/collection/FloatLongMap\n+ 5 FloatSet.kt\nandroidx/collection/FloatSet\n+ 6 FloatList.kt\nandroidx/collection/FloatList\n+ 7 FloatSet.kt\nandroidx/collection/FloatSetKt\n*L\n1#1,1047:1\n1037#1,2:1134\n1041#1,5:1142\n1037#1,2:1173\n1041#1,5:1181\n1037#1,2:1198\n1041#1,5:1206\n1037#1,2:1212\n1041#1,5:1220\n1#2:1048\n1672#3,6:1049\n1826#3:1065\n1688#3:1069\n1826#3:1087\n1688#3:1091\n1826#3:1112\n1688#3:1116\n1672#3,6:1136\n1672#3,6:1147\n1615#3:1156\n1619#3:1157\n1795#3,3:1158\n1809#3,3:1161\n1733#3:1164\n1721#3:1165\n1715#3:1166\n1728#3:1167\n1818#3:1168\n1682#3:1169\n1661#3:1170\n1680#3:1171\n1661#3:1172\n1672#3,6:1175\n1795#3,3:1186\n1826#3:1189\n1715#3:1190\n1685#3:1191\n1661#3:1192\n1615#3:1196\n1619#3:1197\n1672#3,6:1200\n1661#3:1211\n1672#3,6:1214\n1672#3,6:1225\n1672#3,6:1231\n385#4,4:1055\n357#4,6:1059\n367#4,3:1066\n370#4,2:1070\n389#4,2:1072\n373#4,6:1074\n391#4:1080\n357#4,6:1081\n367#4,3:1088\n370#4,9:1092\n262#5,4:1101\n232#5,7:1105\n243#5,3:1113\n246#5,2:1117\n266#5,2:1119\n249#5,6:1121\n268#5:1127\n253#6,6:1128\n849#7,3:1153\n849#7,3:1193\n*S KotlinDebug\n*F\n+ 1 FloatLongMap.kt\nandroidx/collection/MutableFloatLongMap\n*L\n875#1:1134,2\n875#1:1142,5\n933#1:1173,2\n933#1:1181,5\n1007#1:1198,2\n1007#1:1206,5\n1023#1:1212,2\n1023#1:1220,5\n711#1:1049,6\n789#1:1065\n789#1:1069\n828#1:1087\n828#1:1091\n855#1:1112\n855#1:1116\n875#1:1136,6\n885#1:1147,6\n899#1:1156\n900#1:1157\n907#1:1158,3\n908#1:1161,3\n909#1:1164\n910#1:1165\n910#1:1166\n914#1:1167\n917#1:1168\n926#1:1169\n926#1:1170\n932#1:1171\n932#1:1172\n933#1:1175,6\n948#1:1186,3\n949#1:1189\n951#1:1190\n1002#1:1191\n1002#1:1192\n1005#1:1196\n1007#1:1197\n1007#1:1200,6\n1021#1:1211\n1023#1:1214,6\n1038#1:1225,6\n1044#1:1231,6\n789#1:1055,4\n789#1:1059,6\n789#1:1066,3\n789#1:1070,2\n789#1:1072,2\n789#1:1074,6\n789#1:1080\n828#1:1081,6\n828#1:1088,3\n828#1:1092,9\n855#1:1101,4\n855#1:1105,7\n855#1:1113,3\n855#1:1117,2\n855#1:1119,2\n855#1:1121,6\n855#1:1127\n864#1:1128,6\n898#1:1153,3\n1004#1:1193,3\n*E\n"})
+public final class MutableFloatLongMap extends FloatLongMap {
+    public int growthLimit;
+
+    public MutableFloatLongMap() {
+        this(0, 1, null);
+    }
+
+    public final void adjustStorage() {
+        int i = this._capacity;
+        if (i <= 8 || Long.compare((((long) this._size) * 32) ^ Long.MIN_VALUE, (((long) i) * 25) ^ Long.MIN_VALUE) > 0) {
+            resizeStorage(ScatterMapKt.nextCapacity(this._capacity));
+        } else {
+            removeDeletedMarkers();
+        }
+    }
+
+    public final void clear() {
+        this._size = 0;
+        long[] jArr = this.metadata;
+        if (jArr != ScatterMapKt.EmptyGroup) {
+            ArraysKt___ArraysJvmKt.fill$default(jArr, -9187201950435737472L, 0, 0, 6, (Object) null);
+            long[] jArr2 = this.metadata;
+            int i = this._capacity;
+            int i2 = i >> 3;
+            long j = 255 << ((i & 7) << 3);
+            jArr2[i2] = (jArr2[i2] & (~j)) | j;
+        }
+        initializeGrowth();
+    }
+
+    public final int findFirstAvailableSlot(int i) {
+        int i2 = this._capacity;
+        int i3 = i & i2;
+        int i4 = 0;
+        while (true) {
+            long[] jArr = this.metadata;
+            int i5 = i3 >> 3;
+            int i6 = (i3 & 7) << 3;
+            long j = ((jArr[i5 + 1] << (64 - i6)) & ((-i6) >> 63)) | (jArr[i5] >>> i6);
+            long j2 = j & ((~j) << 7) & (-9187201950435737472L);
+            if (j2 != 0) {
+                return (i3 + (Long.numberOfTrailingZeros(j2) >> 3)) & i2;
+            }
+            i4 += 8;
+            i3 = (i3 + i4) & i2;
+        }
+    }
+
+    public final int findInsertIndex(float f) {
+        int iFloatToIntBits = Float.floatToIntBits(f) * (-862048943);
+        int i = iFloatToIntBits ^ (iFloatToIntBits << 16);
+        int i2 = i >>> 7;
+        int i3 = i & 127;
+        int i4 = this._capacity;
+        int i5 = i2 & i4;
+        int i6 = 0;
+        while (true) {
+            long[] jArr = this.metadata;
+            int i7 = i5 >> 3;
+            int i8 = (i5 & 7) << 3;
+            long j = ((jArr[i7 + 1] << (64 - i8)) & ((-i8) >> 63)) | (jArr[i7] >>> i8);
+            long j2 = i3;
+            int i9 = i6;
+            long j3 = j ^ (j2 * ScatterMapKt.BitmaskLsb);
+            for (long j4 = (~j3) & (j3 - ScatterMapKt.BitmaskLsb) & (-9187201950435737472L); j4 != 0; j4 &= j4 - 1) {
+                int iNumberOfTrailingZeros = ((Long.numberOfTrailingZeros(j4) >> 3) + i5) & i4;
+                if (this.keys[iNumberOfTrailingZeros] == f) {
+                    return iNumberOfTrailingZeros;
+                }
+            }
+            if ((((~j) << 6) & j & (-9187201950435737472L)) != 0) {
+                int iFindFirstAvailableSlot = findFirstAvailableSlot(i2);
+                if (this.growthLimit == 0 && ((this.metadata[iFindFirstAvailableSlot >> 3] >> ((iFindFirstAvailableSlot & 7) << 3)) & 255) != 254) {
+                    adjustStorage();
+                    iFindFirstAvailableSlot = findFirstAvailableSlot(i2);
+                }
+                this._size++;
+                int i10 = this.growthLimit;
+                long[] jArr2 = this.metadata;
+                int i11 = iFindFirstAvailableSlot >> 3;
+                long j5 = jArr2[i11];
+                int i12 = (iFindFirstAvailableSlot & 7) << 3;
+                this.growthLimit = i10 - (((j5 >> i12) & 255) == 128 ? 1 : 0);
+                jArr2[i11] = (j5 & (~(255 << i12))) | (j2 << i12);
+                int i13 = this._capacity;
+                int i14 = ((iFindFirstAvailableSlot - 7) & i13) + (i13 & 7);
+                int i15 = i14 >> 3;
+                int i16 = (i14 & 7) << 3;
+                jArr2[i15] = ((~(255 << i16)) & jArr2[i15]) | (j2 << i16);
+                return ~iFindFirstAvailableSlot;
+            }
+            i6 = i9 + 8;
+            i5 = (i5 + i6) & i4;
+        }
+    }
+
+    public final long getOrPut(float f, @NotNull Function0<Long> defaultValue) {
+        Intrinsics.checkNotNullParameter(defaultValue, "defaultValue");
+        int iFindKeyIndex = findKeyIndex(f);
+        if (iFindKeyIndex >= 0) {
+            return this.values[iFindKeyIndex];
+        }
+        long jLongValue = defaultValue.invoke().longValue();
+        set(f, jLongValue);
+        return jLongValue;
+    }
+
+    public final void initializeGrowth() {
+        this.growthLimit = ScatterMapKt.loadedCapacity(this._capacity) - this._size;
+    }
+
+    public final void initializeMetadata(int i) {
+        long[] jArr;
+        if (i == 0) {
+            jArr = ScatterMapKt.EmptyGroup;
+        } else {
+            long[] jArr2 = new long[((i + 15) & (-8)) >> 3];
+            ArraysKt___ArraysJvmKt.fill$default(jArr2, -9187201950435737472L, 0, 0, 6, (Object) null);
+            jArr = jArr2;
+        }
+        this.metadata = jArr;
+        int i2 = i >> 3;
+        long j = 255 << ((i & 7) << 3);
+        jArr[i2] = (jArr[i2] & (~j)) | j;
+        initializeGrowth();
+    }
+
+    public final void initializeStorage(int i) {
+        int iMax = i > 0 ? Math.max(7, ScatterMapKt.normalizeCapacity(i)) : 0;
+        this._capacity = iMax;
+        initializeMetadata(iMax);
+        this.keys = new float[iMax];
+        this.values = new long[iMax];
+    }
+
+    public final void minusAssign(float f) {
+        remove(f);
+    }
+
+    public final void plusAssign(@NotNull FloatLongMap from) {
+        Intrinsics.checkNotNullParameter(from, "from");
+        putAll(from);
+    }
+
+    public final void put(float f, long j) {
+        set(f, j);
+    }
+
+    public final void putAll(@NotNull FloatLongMap from) {
+        Intrinsics.checkNotNullParameter(from, "from");
+        float[] fArr = from.keys;
+        long[] jArr = from.values;
+        long[] jArr2 = from.metadata;
+        int length = jArr2.length - 2;
+        if (length < 0) {
+            return;
+        }
+        int i = 0;
+        while (true) {
+            long j = jArr2[i];
+            if ((((~j) << 7) & j & (-9187201950435737472L)) != -9187201950435737472L) {
+                int i2 = 8 - ((~(i - length)) >>> 31);
+                for (int i3 = 0; i3 < i2; i3++) {
+                    if ((255 & j) < 128) {
+                        int i4 = (i << 3) + i3;
+                        set(fArr[i4], jArr[i4]);
+                    }
+                    j >>= 8;
+                }
+                if (i2 != 8) {
+                    return;
+                }
+            }
+            if (i == length) {
+                return;
+            } else {
+                i++;
+            }
+        }
+    }
+
+    public final void remove(float f) {
+        int iFindKeyIndex = findKeyIndex(f);
+        if (iFindKeyIndex >= 0) {
+            removeValueAt(iFindKeyIndex);
+        }
+    }
+
+    public final void removeDeletedMarkers() {
+        long[] jArr = this.metadata;
+        int i = this._capacity;
+        int i2 = 0;
+        for (int i3 = 0; i3 < i; i3++) {
+            int i4 = i3 >> 3;
+            int i5 = (i3 & 7) << 3;
+            if (((jArr[i4] >> i5) & 255) == 254) {
+                long[] jArr2 = this.metadata;
+                jArr2[i4] = (128 << i5) | (jArr2[i4] & (~(255 << i5)));
+                int i6 = this._capacity;
+                int i7 = ((i3 - 7) & i6) + (i6 & 7);
+                int i8 = i7 >> 3;
+                int i9 = (i7 & 7) << 3;
+                jArr2[i8] = ((~(255 << i9)) & jArr2[i8]) | (128 << i9);
+                i2++;
+            }
+        }
+        this.growthLimit += i2;
+    }
+
+    public final void removeIf(@NotNull Function2<? super Float, ? super Long, Boolean> predicate) {
+        Intrinsics.checkNotNullParameter(predicate, "predicate");
+        long[] jArr = this.metadata;
+        int length = jArr.length - 2;
+        if (length < 0) {
+            return;
+        }
+        int i = 0;
+        while (true) {
+            long j = jArr[i];
+            if ((((~j) << 7) & j & (-9187201950435737472L)) != -9187201950435737472L) {
+                int i2 = 8 - ((~(i - length)) >>> 31);
+                for (int i3 = 0; i3 < i2; i3++) {
+                    if ((255 & j) < 128) {
+                        int i4 = (i << 3) + i3;
+                        if (predicate.invoke(Float.valueOf(this.keys[i4]), Long.valueOf(this.values[i4])).booleanValue()) {
+                            removeValueAt(i4);
+                        }
+                    }
+                    j >>= 8;
+                }
+                if (i2 != 8) {
+                    return;
+                }
+            }
+            if (i == length) {
+                return;
+            } else {
+                i++;
+            }
+        }
+    }
+
+    @PublishedApi
+    public final void removeValueAt(int i) {
+        this._size--;
+        long[] jArr = this.metadata;
+        int i2 = i >> 3;
+        int i3 = (i & 7) << 3;
+        jArr[i2] = (jArr[i2] & (~(255 << i3))) | (254 << i3);
+        int i4 = this._capacity;
+        int i5 = ((i - 7) & i4) + (i4 & 7);
+        int i6 = i5 >> 3;
+        int i7 = (i5 & 7) << 3;
+        jArr[i6] = (jArr[i6] & (~(255 << i7))) | (254 << i7);
+    }
+
+    public final void resizeStorage(int i) {
+        long[] jArr;
+        MutableFloatLongMap mutableFloatLongMap = this;
+        long[] jArr2 = mutableFloatLongMap.metadata;
+        float[] fArr = mutableFloatLongMap.keys;
+        long[] jArr3 = mutableFloatLongMap.values;
+        int i2 = mutableFloatLongMap._capacity;
+        initializeStorage(i);
+        float[] fArr2 = mutableFloatLongMap.keys;
+        long[] jArr4 = mutableFloatLongMap.values;
+        int i3 = 0;
+        while (i3 < i2) {
+            if (((jArr2[i3 >> 3] >> ((i3 & 7) << 3)) & 255) < 128) {
+                float f = fArr[i3];
+                int iFloatToIntBits = Float.floatToIntBits(f) * (-862048943);
+                int i4 = iFloatToIntBits ^ (iFloatToIntBits << 16);
+                int iFindFirstAvailableSlot = mutableFloatLongMap.findFirstAvailableSlot(i4 >>> 7);
+                long j = i4 & 127;
+                long[] jArr5 = mutableFloatLongMap.metadata;
+                int i5 = iFindFirstAvailableSlot >> 3;
+                int i6 = (iFindFirstAvailableSlot & 7) << 3;
+                jArr5[i5] = (jArr5[i5] & (~(255 << i6))) | (j << i6);
+                int i7 = mutableFloatLongMap._capacity;
+                int i8 = ((iFindFirstAvailableSlot - 7) & i7) + (i7 & 7);
+                int i9 = i8 >> 3;
+                int i10 = (i8 & 7) << 3;
+                jArr = jArr2;
+                jArr5[i9] = ((~(255 << i10)) & jArr5[i9]) | (j << i10);
+                fArr2[iFindFirstAvailableSlot] = f;
+                jArr4[iFindFirstAvailableSlot] = jArr3[i3];
+            } else {
+                jArr = jArr2;
+            }
+            i3++;
+            mutableFloatLongMap = this;
+            jArr2 = jArr;
+        }
+    }
+
+    public final void set(float f, long j) {
+        int iFindInsertIndex = findInsertIndex(f);
+        if (iFindInsertIndex < 0) {
+            iFindInsertIndex = ~iFindInsertIndex;
+        }
+        this.keys[iFindInsertIndex] = f;
+        this.values[iFindInsertIndex] = j;
+    }
+
+    public final int trim() {
+        int i = this._capacity;
+        int iNormalizeCapacity = ScatterMapKt.normalizeCapacity(ScatterMapKt.unloadedCapacity(this._size));
+        if (iNormalizeCapacity >= i) {
+            return 0;
+        }
+        resizeStorage(iNormalizeCapacity);
+        return i - this._capacity;
+    }
+
+    public final void writeMetadata(int i, long j) {
+        long[] jArr = this.metadata;
+        int i2 = i >> 3;
+        int i3 = (i & 7) << 3;
+        jArr[i2] = (jArr[i2] & (~(255 << i3))) | (j << i3);
+        int i4 = this._capacity;
+        int i5 = ((i - 7) & i4) + (i4 & 7);
+        int i6 = i5 >> 3;
+        int i7 = (i5 & 7) << 3;
+        jArr[i6] = (j << i7) | (jArr[i6] & (~(255 << i7)));
+    }
+
+    public MutableFloatLongMap(int i) {
+        if (i < 0) {
+            throw new IllegalArgumentException("Capacity must be a positive value.");
+        }
+        initializeStorage(ScatterMapKt.unloadedCapacity(i));
+    }
+
+    public final void minusAssign(@NotNull float[] keys) {
+        Intrinsics.checkNotNullParameter(keys, "keys");
+        for (float f : keys) {
+            remove(f);
+        }
+    }
+
+    public final long put(float f, long j, long j2) {
+        int iFindInsertIndex = findInsertIndex(f);
+        if (iFindInsertIndex < 0) {
+            iFindInsertIndex = ~iFindInsertIndex;
+        } else {
+            j2 = this.values[iFindInsertIndex];
+        }
+        this.keys[iFindInsertIndex] = f;
+        this.values[iFindInsertIndex] = j;
+        return j2;
+    }
+
+    public final boolean remove(float f, long j) {
+        int iFindKeyIndex = findKeyIndex(f);
+        if (iFindKeyIndex < 0 || this.values[iFindKeyIndex] != j) {
+            return false;
+        }
+        removeValueAt(iFindKeyIndex);
+        return true;
+    }
+
+    public final void minusAssign(@NotNull FloatSet keys) {
+        Intrinsics.checkNotNullParameter(keys, "keys");
+        float[] fArr = keys.elements;
+        long[] jArr = keys.metadata;
+        int length = jArr.length - 2;
+        if (length < 0) {
+            return;
+        }
+        int i = 0;
+        while (true) {
+            long j = jArr[i];
+            if ((((~j) << 7) & j & (-9187201950435737472L)) != -9187201950435737472L) {
+                int i2 = 8 - ((~(i - length)) >>> 31);
+                for (int i3 = 0; i3 < i2; i3++) {
+                    if ((255 & j) < 128) {
+                        remove(fArr[(i << 3) + i3]);
+                    }
+                    j >>= 8;
+                }
+                if (i2 != 8) {
+                    return;
+                }
+            }
+            if (i == length) {
+                return;
+            } else {
+                i++;
+            }
+        }
+    }
+
+    public /* synthetic */ MutableFloatLongMap(int i, int i2, DefaultConstructorMarker defaultConstructorMarker) {
+        this((i2 & 1) != 0 ? 6 : i);
+    }
+
+    public final void minusAssign(@NotNull FloatList keys) {
+        Intrinsics.checkNotNullParameter(keys, "keys");
+        float[] fArr = keys.content;
+        int i = keys._size;
+        for (int i2 = 0; i2 < i; i2++) {
+            remove(fArr[i2]);
+        }
+    }
+}

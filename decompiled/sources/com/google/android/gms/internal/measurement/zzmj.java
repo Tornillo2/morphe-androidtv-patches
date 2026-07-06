@@ -1,0 +1,54 @@
+package com.google.android.gms.internal.measurement;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes3.dex */
+public final class zzmj {
+    public static String zza(zzjb zzjbVar) {
+        StringBuilder sb = new StringBuilder(zzjbVar.zzd());
+        for (int i = 0; i < zzjbVar.zzd(); i++) {
+            byte bZza = zzjbVar.zza(i);
+            if (bZza == 34) {
+                sb.append("\\\"");
+            } else if (bZza == 39) {
+                sb.append("\\'");
+            } else if (bZza != 92) {
+                switch (bZza) {
+                    case 7:
+                        sb.append("\\a");
+                        break;
+                    case 8:
+                        sb.append("\\b");
+                        break;
+                    case 9:
+                        sb.append("\\t");
+                        break;
+                    case 10:
+                        sb.append("\\n");
+                        break;
+                    case 11:
+                        sb.append("\\v");
+                        break;
+                    case 12:
+                        sb.append("\\f");
+                        break;
+                    case 13:
+                        sb.append("\\r");
+                        break;
+                    default:
+                        if (bZza < 32 || bZza > 126) {
+                            sb.append('\\');
+                            sb.append((char) (((bZza >>> 6) & 3) + 48));
+                            sb.append((char) (((bZza >>> 3) & 7) + 48));
+                            sb.append((char) ((bZza & 7) + 48));
+                        } else {
+                            sb.append((char) bZza);
+                        }
+                        break;
+                }
+            } else {
+                sb.append("\\\\");
+            }
+        }
+        return sb.toString();
+    }
+}

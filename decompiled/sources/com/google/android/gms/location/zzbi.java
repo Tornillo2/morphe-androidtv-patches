@@ -1,0 +1,20 @@
+package com.google.android.gms.location;
+
+import com.google.android.gms.common.annotation.KeepForSdk;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.Result;
+import com.google.android.gms.common.api.internal.BaseImplementation;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes3.dex */
+public abstract class zzbi<R extends Result> extends BaseImplementation.ApiMethodImpl<R, com.google.android.gms.internal.location.zzaz> {
+    public zzbi(GoogleApiClient googleApiClient) {
+        super(LocationServices.API, googleApiClient);
+    }
+
+    @Override // com.google.android.gms.common.api.internal.BaseImplementation.ApiMethodImpl, com.google.android.gms.common.api.internal.BaseImplementation.ResultHolder
+    @KeepForSdk
+    public final /* bridge */ /* synthetic */ void setResult(Object obj) {
+        setResult((Result) obj);
+    }
+}

@@ -1,0 +1,37 @@
+package com.google.android.gms.common.util;
+
+import android.annotation.TargetApi;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.util.Log;
+import androidx.annotation.NonNull;
+import com.google.android.gms.common.GoogleSignatureVerifier;
+import com.google.android.gms.common.annotation.KeepForSdk;
+import com.google.android.gms.common.wrappers.Wrappers;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes3.dex */
+@KeepForSdk
+public final class UidVerifier {
+    @KeepForSdk
+    public static boolean isGooglePlayServicesUid(@NonNull Context context, int i) {
+        if (!uidHasPackageName(context, i, "com.google.android.gms")) {
+            return false;
+        }
+        try {
+            return GoogleSignatureVerifier.getInstance(context).isGooglePublicSignedPackage(context.getPackageManager().getPackageInfo("com.google.android.gms", 64));
+        } catch (PackageManager.NameNotFoundException unused) {
+            if (!Log.isLoggable("UidVerifier", 3)) {
+                return false;
+            }
+            Log.d("UidVerifier", "Package manager can't find google play services package, defaulting to false");
+            return false;
+        }
+    }
+
+    @KeepForSdk
+    @TargetApi(19)
+    public static boolean uidHasPackageName(@NonNull Context context, int i, @NonNull String str) {
+        return Wrappers.zza.zza(context).zza(i, str);
+    }
+}

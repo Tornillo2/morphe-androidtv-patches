@@ -1,0 +1,878 @@
+package com.bumptech.glide.request;
+
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import androidx.annotation.CheckResult;
+import androidx.annotation.DrawableRes;
+import androidx.annotation.FloatRange;
+import androidx.annotation.IntRange;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import com.bumptech.glide.Priority;
+import com.bumptech.glide.load.DecodeFormat;
+import com.bumptech.glide.load.Key;
+import com.bumptech.glide.load.MultiTransformation;
+import com.bumptech.glide.load.Option;
+import com.bumptech.glide.load.Options;
+import com.bumptech.glide.load.Transformation;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.model.stream.HttpGlideUrlLoader;
+import com.bumptech.glide.load.resource.bitmap.BitmapEncoder;
+import com.bumptech.glide.load.resource.bitmap.CenterCrop;
+import com.bumptech.glide.load.resource.bitmap.CenterInside;
+import com.bumptech.glide.load.resource.bitmap.CircleCrop;
+import com.bumptech.glide.load.resource.bitmap.DownsampleStrategy;
+import com.bumptech.glide.load.resource.bitmap.Downsampler;
+import com.bumptech.glide.load.resource.bitmap.DrawableTransformation;
+import com.bumptech.glide.load.resource.bitmap.FitCenter;
+import com.bumptech.glide.load.resource.bitmap.VideoDecoder;
+import com.bumptech.glide.load.resource.gif.GifDrawable;
+import com.bumptech.glide.load.resource.gif.GifDrawableTransformation;
+import com.bumptech.glide.load.resource.gif.GifOptions;
+import com.bumptech.glide.request.BaseRequestOptions;
+import com.bumptech.glide.signature.EmptySignature;
+import com.bumptech.glide.util.CachedHashCodeArrayMap;
+import com.bumptech.glide.util.Preconditions;
+import com.bumptech.glide.util.Util;
+import java.util.Map;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes3.dex */
+public abstract class BaseRequestOptions<T extends BaseRequestOptions<T>> implements Cloneable {
+    public static final int DISK_CACHE_STRATEGY = 4;
+    public static final int ERROR_ID = 32;
+    public static final int ERROR_PLACEHOLDER = 16;
+    public static final int FALLBACK = 8192;
+    public static final int FALLBACK_ID = 16384;
+    public static final int IS_CACHEABLE = 256;
+    public static final int ONLY_RETRIEVE_FROM_CACHE = 524288;
+    public static final int OVERRIDE = 512;
+    public static final int PLACEHOLDER = 64;
+    public static final int PLACEHOLDER_ID = 128;
+    public static final int PRIORITY = 8;
+    public static final int RESOURCE_CLASS = 4096;
+    public static final int SIGNATURE = 1024;
+    public static final int SIZE_MULTIPLIER = 2;
+    public static final int THEME = 32768;
+    public static final int TRANSFORMATION = 2048;
+    public static final int TRANSFORMATION_ALLOWED = 65536;
+    public static final int TRANSFORMATION_REQUIRED = 131072;
+    public static final int UNSET = -1;
+    public static final int USE_ANIMATION_POOL = 1048576;
+    public static final int USE_UNLIMITED_SOURCE_GENERATORS_POOL = 262144;
+    public int errorId;
+
+    @Nullable
+    public Drawable errorPlaceholder;
+
+    @Nullable
+    public Drawable fallbackDrawable;
+    public int fallbackId;
+    public int fields;
+    public boolean isAutoCloneEnabled;
+    public boolean isLocked;
+    public boolean isTransformationRequired;
+    public boolean onlyRetrieveFromCache;
+
+    @Nullable
+    public Drawable placeholderDrawable;
+    public int placeholderId;
+
+    @Nullable
+    public Resources.Theme theme;
+    public boolean useAnimationPool;
+    public boolean useUnlimitedSourceGeneratorsPool;
+    public float sizeMultiplier = 1.0f;
+
+    @NonNull
+    public DiskCacheStrategy diskCacheStrategy = DiskCacheStrategy.AUTOMATIC;
+
+    @NonNull
+    public Priority priority = Priority.NORMAL;
+    public boolean isCacheable = true;
+    public int overrideHeight = -1;
+    public int overrideWidth = -1;
+
+    @NonNull
+    public Key signature = EmptySignature.EMPTY_KEY;
+    public boolean isTransformationAllowed = true;
+
+    @NonNull
+    public Options options = new Options();
+
+    @NonNull
+    public Map<Class<?>, Transformation<?>> transformations = new CachedHashCodeArrayMap();
+
+    @NonNull
+    public Class<?> resourceClass = Object.class;
+    public boolean isScaleOnlyOrNoTransform = true;
+
+    public static boolean isSet(int i, int i2) {
+        return (i & i2) != 0;
+    }
+
+    @NonNull
+    @CheckResult
+    public T apply(@NonNull BaseRequestOptions<?> baseRequestOptions) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().apply(baseRequestOptions);
+        }
+        if (isSet(baseRequestOptions.fields, 2)) {
+            this.sizeMultiplier = baseRequestOptions.sizeMultiplier;
+        }
+        if (isSet(baseRequestOptions.fields, 262144)) {
+            this.useUnlimitedSourceGeneratorsPool = baseRequestOptions.useUnlimitedSourceGeneratorsPool;
+        }
+        if (isSet(baseRequestOptions.fields, 1048576)) {
+            this.useAnimationPool = baseRequestOptions.useAnimationPool;
+        }
+        if (isSet(baseRequestOptions.fields, 4)) {
+            this.diskCacheStrategy = baseRequestOptions.diskCacheStrategy;
+        }
+        if (isSet(baseRequestOptions.fields, 8)) {
+            this.priority = baseRequestOptions.priority;
+        }
+        if (isSet(baseRequestOptions.fields, 16)) {
+            this.errorPlaceholder = baseRequestOptions.errorPlaceholder;
+            this.errorId = 0;
+            this.fields &= -33;
+        }
+        if (isSet(baseRequestOptions.fields, 32)) {
+            this.errorId = baseRequestOptions.errorId;
+            this.errorPlaceholder = null;
+            this.fields &= -17;
+        }
+        if (isSet(baseRequestOptions.fields, 64)) {
+            this.placeholderDrawable = baseRequestOptions.placeholderDrawable;
+            this.placeholderId = 0;
+            this.fields &= -129;
+        }
+        if (isSet(baseRequestOptions.fields, 128)) {
+            this.placeholderId = baseRequestOptions.placeholderId;
+            this.placeholderDrawable = null;
+            this.fields &= -65;
+        }
+        if (isSet(baseRequestOptions.fields, 256)) {
+            this.isCacheable = baseRequestOptions.isCacheable;
+        }
+        if (isSet(baseRequestOptions.fields, 512)) {
+            this.overrideWidth = baseRequestOptions.overrideWidth;
+            this.overrideHeight = baseRequestOptions.overrideHeight;
+        }
+        if (isSet(baseRequestOptions.fields, 1024)) {
+            this.signature = baseRequestOptions.signature;
+        }
+        if (isSet(baseRequestOptions.fields, 4096)) {
+            this.resourceClass = baseRequestOptions.resourceClass;
+        }
+        if (isSet(baseRequestOptions.fields, 8192)) {
+            this.fallbackDrawable = baseRequestOptions.fallbackDrawable;
+            this.fallbackId = 0;
+            this.fields &= -16385;
+        }
+        if (isSet(baseRequestOptions.fields, 16384)) {
+            this.fallbackId = baseRequestOptions.fallbackId;
+            this.fallbackDrawable = null;
+            this.fields &= -8193;
+        }
+        if (isSet(baseRequestOptions.fields, 32768)) {
+            this.theme = baseRequestOptions.theme;
+        }
+        if (isSet(baseRequestOptions.fields, 65536)) {
+            this.isTransformationAllowed = baseRequestOptions.isTransformationAllowed;
+        }
+        if (isSet(baseRequestOptions.fields, 131072)) {
+            this.isTransformationRequired = baseRequestOptions.isTransformationRequired;
+        }
+        if (isSet(baseRequestOptions.fields, 2048)) {
+            this.transformations.putAll(baseRequestOptions.transformations);
+            this.isScaleOnlyOrNoTransform = baseRequestOptions.isScaleOnlyOrNoTransform;
+        }
+        if (isSet(baseRequestOptions.fields, 524288)) {
+            this.onlyRetrieveFromCache = baseRequestOptions.onlyRetrieveFromCache;
+        }
+        if (!this.isTransformationAllowed) {
+            this.transformations.clear();
+            int i = this.fields;
+            this.isTransformationRequired = false;
+            this.fields = i & (-133121);
+            this.isScaleOnlyOrNoTransform = true;
+        }
+        this.fields |= baseRequestOptions.fields;
+        this.options.putAll(baseRequestOptions.options);
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    public T autoClone() {
+        if (this.isLocked && !this.isAutoCloneEnabled) {
+            throw new IllegalStateException("You cannot auto lock an already locked options object, try clone() first");
+        }
+        this.isAutoCloneEnabled = true;
+        return (T) lock();
+    }
+
+    @NonNull
+    @CheckResult
+    public T centerCrop() {
+        return (T) transform(DownsampleStrategy.CENTER_OUTSIDE, new CenterCrop());
+    }
+
+    @NonNull
+    @CheckResult
+    public T centerInside() {
+        return (T) scaleOnlyTransform(DownsampleStrategy.CENTER_INSIDE, new CenterInside(), true);
+    }
+
+    @NonNull
+    @CheckResult
+    public T circleCrop() {
+        return (T) transform(DownsampleStrategy.CENTER_INSIDE, new CircleCrop());
+    }
+
+    @NonNull
+    @CheckResult
+    public T decode(@NonNull Class<?> cls) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().decode(cls);
+        }
+        Preconditions.checkNotNull(cls, "Argument must not be null");
+        this.resourceClass = cls;
+        this.fields |= 4096;
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T disallowHardwareConfig() {
+        return (T) set(Downsampler.ALLOW_HARDWARE_CONFIG, Boolean.FALSE);
+    }
+
+    @NonNull
+    @CheckResult
+    public T diskCacheStrategy(@NonNull DiskCacheStrategy diskCacheStrategy) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().diskCacheStrategy(diskCacheStrategy);
+        }
+        Preconditions.checkNotNull(diskCacheStrategy, "Argument must not be null");
+        this.diskCacheStrategy = diskCacheStrategy;
+        this.fields |= 4;
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T dontAnimate() {
+        return (T) set(GifOptions.DISABLE_ANIMATION, Boolean.TRUE);
+    }
+
+    @NonNull
+    @CheckResult
+    public T dontTransform() {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().dontTransform();
+        }
+        this.transformations.clear();
+        int i = this.fields;
+        this.isTransformationRequired = false;
+        this.isTransformationAllowed = false;
+        this.fields = (i & (-133121)) | 65536;
+        this.isScaleOnlyOrNoTransform = true;
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T downsample(@NonNull DownsampleStrategy downsampleStrategy) {
+        Option option = DownsampleStrategy.OPTION;
+        Preconditions.checkNotNull(downsampleStrategy, "Argument must not be null");
+        return (T) set(option, downsampleStrategy);
+    }
+
+    @NonNull
+    @CheckResult
+    public T encodeFormat(@NonNull Bitmap.CompressFormat compressFormat) {
+        Option option = BitmapEncoder.COMPRESSION_FORMAT;
+        Preconditions.checkNotNull(compressFormat, "Argument must not be null");
+        return (T) set(option, compressFormat);
+    }
+
+    @NonNull
+    @CheckResult
+    public T encodeQuality(@IntRange(from = 0, to = 100) int i) {
+        return (T) set(BitmapEncoder.COMPRESSION_QUALITY, Integer.valueOf(i));
+    }
+
+    public boolean equals(Object obj) {
+        if (obj instanceof BaseRequestOptions) {
+            BaseRequestOptions baseRequestOptions = (BaseRequestOptions) obj;
+            if (Float.compare(baseRequestOptions.sizeMultiplier, this.sizeMultiplier) == 0 && this.errorId == baseRequestOptions.errorId && Util.bothNullOrEqual(this.errorPlaceholder, baseRequestOptions.errorPlaceholder) && this.placeholderId == baseRequestOptions.placeholderId && Util.bothNullOrEqual(this.placeholderDrawable, baseRequestOptions.placeholderDrawable) && this.fallbackId == baseRequestOptions.fallbackId && Util.bothNullOrEqual(this.fallbackDrawable, baseRequestOptions.fallbackDrawable) && this.isCacheable == baseRequestOptions.isCacheable && this.overrideHeight == baseRequestOptions.overrideHeight && this.overrideWidth == baseRequestOptions.overrideWidth && this.isTransformationRequired == baseRequestOptions.isTransformationRequired && this.isTransformationAllowed == baseRequestOptions.isTransformationAllowed && this.useUnlimitedSourceGeneratorsPool == baseRequestOptions.useUnlimitedSourceGeneratorsPool && this.onlyRetrieveFromCache == baseRequestOptions.onlyRetrieveFromCache && this.diskCacheStrategy.equals(baseRequestOptions.diskCacheStrategy) && this.priority == baseRequestOptions.priority && this.options.equals(baseRequestOptions.options) && this.transformations.equals(baseRequestOptions.transformations) && this.resourceClass.equals(baseRequestOptions.resourceClass) && Util.bothNullOrEqual(this.signature, baseRequestOptions.signature) && Util.bothNullOrEqual(this.theme, baseRequestOptions.theme)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @NonNull
+    @CheckResult
+    public T error(@Nullable Drawable drawable) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().error(drawable);
+        }
+        this.errorPlaceholder = drawable;
+        int i = this.fields | 16;
+        this.errorId = 0;
+        this.fields = i & (-33);
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T fallback(@Nullable Drawable drawable) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().fallback(drawable);
+        }
+        this.fallbackDrawable = drawable;
+        int i = this.fields | 8192;
+        this.fallbackId = 0;
+        this.fields = i & (-16385);
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T fitCenter() {
+        return (T) scaleOnlyTransform(DownsampleStrategy.FIT_CENTER, new FitCenter(), true);
+    }
+
+    @NonNull
+    @CheckResult
+    public T format(@NonNull DecodeFormat decodeFormat) {
+        Preconditions.checkNotNull(decodeFormat);
+        return (T) set(Downsampler.DECODE_FORMAT, decodeFormat).set(GifOptions.DECODE_FORMAT, decodeFormat);
+    }
+
+    @NonNull
+    @CheckResult
+    public T frame(@IntRange(from = 0) long j) {
+        return (T) set(VideoDecoder.TARGET_FRAME, Long.valueOf(j));
+    }
+
+    @NonNull
+    public final DiskCacheStrategy getDiskCacheStrategy() {
+        return this.diskCacheStrategy;
+    }
+
+    public final int getErrorId() {
+        return this.errorId;
+    }
+
+    @Nullable
+    public final Drawable getErrorPlaceholder() {
+        return this.errorPlaceholder;
+    }
+
+    @Nullable
+    public final Drawable getFallbackDrawable() {
+        return this.fallbackDrawable;
+    }
+
+    public final int getFallbackId() {
+        return this.fallbackId;
+    }
+
+    public final boolean getOnlyRetrieveFromCache() {
+        return this.onlyRetrieveFromCache;
+    }
+
+    @NonNull
+    public final Options getOptions() {
+        return this.options;
+    }
+
+    public final int getOverrideHeight() {
+        return this.overrideHeight;
+    }
+
+    public final int getOverrideWidth() {
+        return this.overrideWidth;
+    }
+
+    @Nullable
+    public final Drawable getPlaceholderDrawable() {
+        return this.placeholderDrawable;
+    }
+
+    public final int getPlaceholderId() {
+        return this.placeholderId;
+    }
+
+    @NonNull
+    public final Priority getPriority() {
+        return this.priority;
+    }
+
+    @NonNull
+    public final Class<?> getResourceClass() {
+        return this.resourceClass;
+    }
+
+    @NonNull
+    public final Key getSignature() {
+        return this.signature;
+    }
+
+    public final float getSizeMultiplier() {
+        return this.sizeMultiplier;
+    }
+
+    @Nullable
+    public final Resources.Theme getTheme() {
+        return this.theme;
+    }
+
+    @NonNull
+    public final Map<Class<?>, Transformation<?>> getTransformations() {
+        return this.transformations;
+    }
+
+    public final boolean getUseAnimationPool() {
+        return this.useAnimationPool;
+    }
+
+    public final boolean getUseUnlimitedSourceGeneratorsPool() {
+        return this.useUnlimitedSourceGeneratorsPool;
+    }
+
+    public int hashCode() {
+        return Util.hashCode(this.theme, Util.hashCode(this.signature, Util.hashCode(this.resourceClass, Util.hashCode(this.transformations, Util.hashCode(this.options, Util.hashCode(this.priority, Util.hashCode(this.diskCacheStrategy, Util.hashCode(this.onlyRetrieveFromCache ? 1 : 0, Util.hashCode(this.useUnlimitedSourceGeneratorsPool ? 1 : 0, Util.hashCode(this.isTransformationAllowed ? 1 : 0, Util.hashCode(this.isTransformationRequired ? 1 : 0, Util.hashCode(this.overrideWidth, Util.hashCode(this.overrideHeight, Util.hashCode(this.isCacheable ? 1 : 0, Util.hashCode(this.fallbackDrawable, Util.hashCode(this.fallbackId, Util.hashCode(this.placeholderDrawable, Util.hashCode(this.placeholderId, Util.hashCode(this.errorPlaceholder, Util.hashCode(this.errorId, Util.hashCode(this.sizeMultiplier)))))))))))))))))))));
+    }
+
+    public boolean isAutoCloneEnabled() {
+        return this.isAutoCloneEnabled;
+    }
+
+    public final boolean isDiskCacheStrategySet() {
+        return isSet(this.fields, 4);
+    }
+
+    public final boolean isLocked() {
+        return this.isLocked;
+    }
+
+    public final boolean isMemoryCacheable() {
+        return this.isCacheable;
+    }
+
+    public final boolean isPrioritySet() {
+        return isSet(this.fields, 8);
+    }
+
+    public boolean isScaleOnlyOrNoTransform() {
+        return this.isScaleOnlyOrNoTransform;
+    }
+
+    public final boolean isSkipMemoryCacheSet() {
+        return isSet(this.fields, 256);
+    }
+
+    public final boolean isTransformationAllowed() {
+        return this.isTransformationAllowed;
+    }
+
+    public final boolean isTransformationRequired() {
+        return this.isTransformationRequired;
+    }
+
+    public final boolean isTransformationSet() {
+        return isSet(this.fields, 2048);
+    }
+
+    public final boolean isValidOverride() {
+        return Util.isValidDimensions(this.overrideWidth, this.overrideHeight);
+    }
+
+    @NonNull
+    public T lock() {
+        this.isLocked = true;
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T onlyRetrieveFromCache(boolean z) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().onlyRetrieveFromCache(z);
+        }
+        this.onlyRetrieveFromCache = z;
+        this.fields |= 524288;
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T optionalCenterCrop() {
+        return (T) optionalTransform(DownsampleStrategy.CENTER_OUTSIDE, new CenterCrop());
+    }
+
+    @NonNull
+    @CheckResult
+    public T optionalCenterInside() {
+        return (T) scaleOnlyTransform(DownsampleStrategy.CENTER_INSIDE, new CenterInside(), false);
+    }
+
+    @NonNull
+    @CheckResult
+    public T optionalCircleCrop() {
+        return (T) optionalTransform(DownsampleStrategy.CENTER_OUTSIDE, new CircleCrop());
+    }
+
+    @NonNull
+    @CheckResult
+    public T optionalFitCenter() {
+        return (T) scaleOnlyTransform(DownsampleStrategy.FIT_CENTER, new FitCenter(), false);
+    }
+
+    @NonNull
+    public final T optionalScaleOnlyTransform(@NonNull DownsampleStrategy downsampleStrategy, @NonNull Transformation<Bitmap> transformation) {
+        return (T) scaleOnlyTransform(downsampleStrategy, transformation, false);
+    }
+
+    @NonNull
+    public final T optionalTransform(@NonNull DownsampleStrategy downsampleStrategy, @NonNull Transformation<Bitmap> transformation) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().optionalTransform(downsampleStrategy, transformation);
+        }
+        downsample(downsampleStrategy);
+        return (T) transform(transformation, false);
+    }
+
+    @NonNull
+    @CheckResult
+    public T override(int i, int i2) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().override(i, i2);
+        }
+        this.overrideWidth = i;
+        this.overrideHeight = i2;
+        this.fields |= 512;
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T placeholder(@Nullable Drawable drawable) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().placeholder(drawable);
+        }
+        this.placeholderDrawable = drawable;
+        int i = this.fields | 64;
+        this.placeholderId = 0;
+        this.fields = i & (-129);
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T priority(@NonNull Priority priority) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().priority(priority);
+        }
+        Preconditions.checkNotNull(priority, "Argument must not be null");
+        this.priority = priority;
+        this.fields |= 8;
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    public final T scaleOnlyTransform(@NonNull DownsampleStrategy downsampleStrategy, @NonNull Transformation<Bitmap> transformation) {
+        return (T) scaleOnlyTransform(downsampleStrategy, transformation, true);
+    }
+
+    @NonNull
+    public final T selfOrThrowIfLocked() {
+        if (this.isLocked) {
+            throw new IllegalStateException("You cannot modify locked T, consider clone()");
+        }
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public <Y> T set(@NonNull Option<Y> option, @NonNull Y y) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().set(option, y);
+        }
+        Preconditions.checkNotNull(option);
+        Preconditions.checkNotNull(y);
+        this.options.set(option, y);
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T signature(@NonNull Key key) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().signature(key);
+        }
+        Preconditions.checkNotNull(key, "Argument must not be null");
+        this.signature = key;
+        this.fields |= 1024;
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T sizeMultiplier(@FloatRange(from = 0.0d, to = 1.0d) float f) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().sizeMultiplier(f);
+        }
+        if (f < 0.0f || f > 1.0f) {
+            throw new IllegalArgumentException("sizeMultiplier must be between 0 and 1");
+        }
+        this.sizeMultiplier = f;
+        this.fields |= 2;
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T skipMemoryCache(boolean z) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().skipMemoryCache(true);
+        }
+        this.isCacheable = !z;
+        this.fields |= 256;
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T theme(@Nullable Resources.Theme theme) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().theme(theme);
+        }
+        this.theme = theme;
+        this.fields |= 32768;
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T timeout(@IntRange(from = 0) int i) {
+        return (T) set(HttpGlideUrlLoader.TIMEOUT, Integer.valueOf(i));
+    }
+
+    @NonNull
+    @CheckResult
+    public final T transform(@NonNull DownsampleStrategy downsampleStrategy, @NonNull Transformation<Bitmap> transformation) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().transform(downsampleStrategy, transformation);
+        }
+        downsample(downsampleStrategy);
+        return (T) transform(transformation);
+    }
+
+    @NonNull
+    @CheckResult
+    @Deprecated
+    public T transforms(@NonNull Transformation<Bitmap>... transformationArr) {
+        return (T) transform((Transformation<Bitmap>) new MultiTransformation(transformationArr), true);
+    }
+
+    @NonNull
+    @CheckResult
+    public T useAnimationPool(boolean z) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().useAnimationPool(z);
+        }
+        this.useAnimationPool = z;
+        this.fields |= 1048576;
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T useUnlimitedSourceGeneratorsPool(boolean z) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().useUnlimitedSourceGeneratorsPool(z);
+        }
+        this.useUnlimitedSourceGeneratorsPool = z;
+        this.fields |= 262144;
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @Override // 
+    @CheckResult
+    /* JADX INFO: renamed from: clone */
+    public T mo346clone() {
+        try {
+            T t = (T) super.clone();
+            Options options = new Options();
+            t.options = options;
+            options.putAll(this.options);
+            CachedHashCodeArrayMap cachedHashCodeArrayMap = new CachedHashCodeArrayMap();
+            t.transformations = cachedHashCodeArrayMap;
+            cachedHashCodeArrayMap.putAll(this.transformations);
+            t.isLocked = false;
+            t.isAutoCloneEnabled = false;
+            return t;
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public final boolean isSet(int i) {
+        return isSet(this.fields, i);
+    }
+
+    @NonNull
+    public final T scaleOnlyTransform(@NonNull DownsampleStrategy downsampleStrategy, @NonNull Transformation<Bitmap> transformation, boolean z) {
+        T t = z ? (T) transform(downsampleStrategy, transformation) : (T) optionalTransform(downsampleStrategy, transformation);
+        t.isScaleOnlyOrNoTransform = true;
+        return t;
+    }
+
+    @NonNull
+    @CheckResult
+    public T optionalTransform(@NonNull Transformation<Bitmap> transformation) {
+        return (T) transform(transformation, false);
+    }
+
+    @NonNull
+    @CheckResult
+    public T transform(@NonNull Transformation<Bitmap> transformation) {
+        return (T) transform(transformation, true);
+    }
+
+    @NonNull
+    @CheckResult
+    public <Y> T optionalTransform(@NonNull Class<Y> cls, @NonNull Transformation<Y> transformation) {
+        return (T) transform(cls, transformation, false);
+    }
+
+    @NonNull
+    @CheckResult
+    public T transform(@NonNull Transformation<Bitmap>... transformationArr) {
+        if (transformationArr.length > 1) {
+            return (T) transform((Transformation<Bitmap>) new MultiTransformation(transformationArr), true);
+        }
+        if (transformationArr.length == 1) {
+            return (T) transform(transformationArr[0]);
+        }
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T override(int i) {
+        return (T) override(i, i);
+    }
+
+    @NonNull
+    @CheckResult
+    public T error(@DrawableRes int i) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().error(i);
+        }
+        this.errorId = i;
+        int i2 = this.fields | 32;
+        this.errorPlaceholder = null;
+        this.fields = i2 & (-17);
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T fallback(@DrawableRes int i) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().fallback(i);
+        }
+        this.fallbackId = i;
+        int i2 = this.fields | 16384;
+        this.fallbackDrawable = null;
+        this.fields = i2 & (-8193);
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public T placeholder(@DrawableRes int i) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().placeholder(i);
+        }
+        this.placeholderId = i;
+        int i2 = this.fields | 128;
+        this.placeholderDrawable = null;
+        this.fields = i2 & (-65);
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    /* JADX WARN: Multi-variable type inference failed */
+    @NonNull
+    public T transform(@NonNull Transformation<Bitmap> transformation, boolean z) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().transform(transformation, z);
+        }
+        DrawableTransformation drawableTransformation = new DrawableTransformation(transformation, z);
+        transform(Bitmap.class, transformation, z);
+        transform(Drawable.class, drawableTransformation, z);
+        transform(BitmapDrawable.class, drawableTransformation, z);
+        transform(GifDrawable.class, new GifDrawableTransformation(transformation), z);
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    public final T self() {
+        return this;
+    }
+
+    @NonNull
+    public <Y> T transform(@NonNull Class<Y> cls, @NonNull Transformation<Y> transformation, boolean z) {
+        if (this.isAutoCloneEnabled) {
+            return (T) mo346clone().transform(cls, transformation, z);
+        }
+        Preconditions.checkNotNull(cls);
+        Preconditions.checkNotNull(transformation);
+        this.transformations.put(cls, transformation);
+        int i = this.fields;
+        this.isTransformationAllowed = true;
+        this.fields = 67584 | i;
+        this.isScaleOnlyOrNoTransform = false;
+        if (z) {
+            this.fields = i | 198656;
+            this.isTransformationRequired = true;
+        }
+        selfOrThrowIfLocked();
+        return this;
+    }
+
+    @NonNull
+    @CheckResult
+    public <Y> T transform(@NonNull Class<Y> cls, @NonNull Transformation<Y> transformation) {
+        return (T) transform(cls, transformation, true);
+    }
+}

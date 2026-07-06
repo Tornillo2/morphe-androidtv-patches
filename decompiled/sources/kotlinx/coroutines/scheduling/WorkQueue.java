@@ -1,0 +1,169 @@
+package kotlinx.coroutines.scheduling;
+
+import androidx.concurrent.futures.AbstractResolvableFuture$SafeAtomicHelper$$ExternalSyntheticBackportWithForwarding0;
+import com.google.common.util.concurrent.Striped$SmallLazyStriped$$ExternalSyntheticBackportWithForwarding0;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes4.dex */
+public final class WorkQueue {
+    public static final /* synthetic */ AtomicReferenceFieldUpdater lastScheduledTask$FU = AtomicReferenceFieldUpdater.newUpdater(WorkQueue.class, Object.class, "lastScheduledTask");
+    public static final /* synthetic */ AtomicIntegerFieldUpdater producerIndex$FU = AtomicIntegerFieldUpdater.newUpdater(WorkQueue.class, "producerIndex");
+    public static final /* synthetic */ AtomicIntegerFieldUpdater consumerIndex$FU = AtomicIntegerFieldUpdater.newUpdater(WorkQueue.class, "consumerIndex");
+    public static final /* synthetic */ AtomicIntegerFieldUpdater blockingTasksInBuffer$FU = AtomicIntegerFieldUpdater.newUpdater(WorkQueue.class, "blockingTasksInBuffer");
+
+    @NotNull
+    public final AtomicReferenceArray<Task> buffer = new AtomicReferenceArray<>(128);
+
+    @NotNull
+    private volatile /* synthetic */ Object lastScheduledTask = null;
+
+    @NotNull
+    private volatile /* synthetic */ int producerIndex = 0;
+
+    @NotNull
+    private volatile /* synthetic */ int consumerIndex = 0;
+
+    @NotNull
+    private volatile /* synthetic */ int blockingTasksInBuffer = 0;
+
+    public static /* synthetic */ Task add$default(WorkQueue workQueue, Task task, boolean z, int i, Object obj) {
+        if ((i & 2) != 0) {
+            z = false;
+        }
+        return workQueue.add(task, z);
+    }
+
+    @Nullable
+    public final Task add(@NotNull Task task, boolean z) {
+        if (z) {
+            return addLast(task);
+        }
+        Task task2 = (Task) lastScheduledTask$FU.getAndSet(this, task);
+        if (task2 == null) {
+            return null;
+        }
+        return addLast(task2);
+    }
+
+    public final Task addLast(Task task) {
+        if (task.taskContext.getTaskMode() == 1) {
+            blockingTasksInBuffer$FU.incrementAndGet(this);
+        }
+        if (getBufferSize$kotlinx_coroutines_core() == 127) {
+            return task;
+        }
+        int i = this.producerIndex & 127;
+        while (this.buffer.get(i) != null) {
+            Thread.yield();
+        }
+        this.buffer.lazySet(i, task);
+        producerIndex$FU.incrementAndGet(this);
+        return null;
+    }
+
+    public final void decrementIfBlocking(Task task) {
+        if (task == null || task.taskContext.getTaskMode() != 1) {
+            return;
+        }
+        blockingTasksInBuffer$FU.decrementAndGet(this);
+    }
+
+    public final int getBufferSize$kotlinx_coroutines_core() {
+        return this.producerIndex - this.consumerIndex;
+    }
+
+    public final int getSize$kotlinx_coroutines_core() {
+        return this.lastScheduledTask != null ? getBufferSize$kotlinx_coroutines_core() + 1 : getBufferSize$kotlinx_coroutines_core();
+    }
+
+    public final void offloadAllWorkTo(@NotNull GlobalQueue globalQueue) {
+        Task task = (Task) lastScheduledTask$FU.getAndSet(this, null);
+        if (task != null) {
+            globalQueue.addLast(task);
+        }
+        while (pollTo(globalQueue)) {
+        }
+    }
+
+    @Nullable
+    public final Task poll() {
+        Task task = (Task) lastScheduledTask$FU.getAndSet(this, null);
+        return task == null ? pollBuffer() : task;
+    }
+
+    public final Task pollBuffer() {
+        Task andSet;
+        while (true) {
+            int i = this.consumerIndex;
+            if (i - this.producerIndex == 0) {
+                return null;
+            }
+            int i2 = i & 127;
+            if (consumerIndex$FU.compareAndSet(this, i, i + 1) && (andSet = this.buffer.getAndSet(i2, null)) != null) {
+                decrementIfBlocking(andSet);
+                return andSet;
+            }
+        }
+    }
+
+    public final boolean pollTo(GlobalQueue globalQueue) {
+        Task taskPollBuffer = pollBuffer();
+        if (taskPollBuffer == null) {
+            return false;
+        }
+        globalQueue.addLast(taskPollBuffer);
+        return true;
+    }
+
+    public final long tryStealBlockingFrom(@NotNull WorkQueue workQueue) {
+        int i = workQueue.producerIndex;
+        AtomicReferenceArray<Task> atomicReferenceArray = workQueue.buffer;
+        for (int i2 = workQueue.consumerIndex; i2 != i; i2++) {
+            int i3 = i2 & 127;
+            if (workQueue.blockingTasksInBuffer == 0) {
+                break;
+            }
+            Task task = atomicReferenceArray.get(i3);
+            if (task != null && task.taskContext.getTaskMode() == 1 && Striped$SmallLazyStriped$$ExternalSyntheticBackportWithForwarding0.m(atomicReferenceArray, i3, task, null)) {
+                blockingTasksInBuffer$FU.decrementAndGet(workQueue);
+                add$default(this, task, false, 2, null);
+                return -1L;
+            }
+        }
+        return tryStealLastScheduled(workQueue, true);
+    }
+
+    public final long tryStealFrom(@NotNull WorkQueue workQueue) {
+        Task taskPollBuffer = workQueue.pollBuffer();
+        if (taskPollBuffer == null) {
+            return tryStealLastScheduled(workQueue, false);
+        }
+        add$default(this, taskPollBuffer, false, 2, null);
+        return -1L;
+    }
+
+    public final long tryStealLastScheduled(WorkQueue workQueue, boolean z) {
+        Task task;
+        do {
+            task = (Task) workQueue.lastScheduledTask;
+            if (task == null) {
+                return -2L;
+            }
+            if (z && task.taskContext.getTaskMode() != 1) {
+                return -2L;
+            }
+            long jNanoTime = TasksKt.schedulerTimeSource.nanoTime() - task.submissionTime;
+            long j = TasksKt.WORK_STEALING_TIME_RESOLUTION_NS;
+            if (jNanoTime < j) {
+                return j - jNanoTime;
+            }
+        } while (!AbstractResolvableFuture$SafeAtomicHelper$$ExternalSyntheticBackportWithForwarding0.m(lastScheduledTask$FU, workQueue, task, null));
+        add$default(this, task, false, 2, null);
+        return -1L;
+    }
+}

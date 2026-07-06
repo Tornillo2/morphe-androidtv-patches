@@ -1,0 +1,46 @@
+{
+    "devo": {
+        "StorageConfiguration": {
+            "MaxBatchOpenTimeMillis": 60000,
+            "CheckBatchOpenTimeMillis": 30000,
+            "MaxBatchEntries": 504,
+            "MaxBatchSizeBytes": 65536,
+            "MaxStorageSpaceBytes": 5210000,
+            "MaxNumberOfBatchFiles": 2000,
+            "ExpiryTimeMillis": 3600000,
+            "PurgePeriodMillis": 600000,
+            "TransmissionPeriodMillis": 900000,
+            "UploadTriggeredByStoragePeriodMillis": 180000
+        },
+        "UploadConfiguration": {
+            "UrlEndpoint": "https://{deviceType}.{region}.prod.service.minerva.devices.a2z.com:443/metric-batch",
+            "IonFormat": "text/x-amzn-ion",
+            "ConnectTimeoutMillis": 10000,
+            "ReadTimeoutMillis": 10000,
+            "WakeLockTimeoutMillis": 300000,
+            "KPIRegion": "us-east-1"
+        }
+    },
+    "prod": {
+        "StorageConfiguration": {
+            "MaxBatchOpenTimeMillis": 1200000,
+            "CheckBatchOpenTimeMillis": 300000,
+            "MaxBatchEntries": 504,
+            "MaxBatchSizeBytes": 65536,
+            "MaxStorageSpaceBytes": 5242880,
+            "MaxNumberOfBatchFiles": 2048,
+            "ExpiryTimeMillis": 604800000,
+            "PurgePeriodMillis": 86400000,
+            "TransmissionPeriodMillis": 1800000,
+            "UploadTriggeredByStoragePeriodMillis": 7200000
+        },
+        "UploadConfiguration": {
+            "UrlEndpoint": "https://{deviceType}.{region}.prod.service.minerva.devices.a2z.com:443/metric-batch",
+            "IonFormat": "application/x-amzn-ion",
+            "ConnectTimeoutMillis": 10000,
+            "ReadTimeoutMillis": 10000,
+            "WakeLockTimeoutMillis": 300000,
+            "KPIRegion": "us-east-1"
+        }
+    }
+}

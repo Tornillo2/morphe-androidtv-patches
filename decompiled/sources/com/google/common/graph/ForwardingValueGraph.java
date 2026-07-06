@@ -1,0 +1,90 @@
+package com.google.common.graph;
+
+import com.google.common.graph.AbstractBaseGraph;
+import java.util.Set;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes3.dex */
+public abstract class ForwardingValueGraph<N, V> extends AbstractValueGraph<N, V> {
+    @Override // com.google.common.graph.BaseGraph, com.google.common.graph.Graph
+    public Set<N> adjacentNodes(N node) {
+        return delegate().adjacentNodes(node);
+    }
+
+    @Override // com.google.common.graph.BaseGraph, com.google.common.graph.Graph
+    public boolean allowsSelfLoops() {
+        return delegate().allowsSelfLoops();
+    }
+
+    @Override // com.google.common.graph.AbstractValueGraph, com.google.common.graph.AbstractBaseGraph, com.google.common.graph.BaseGraph
+    public int degree(N node) {
+        return delegate().degree(node);
+    }
+
+    public abstract ValueGraph<N, V> delegate();
+
+    @Override // com.google.common.graph.AbstractBaseGraph
+    public long edgeCount() {
+        return ((AbstractBaseGraph.AnonymousClass1) delegate().edges()).size();
+    }
+
+    @Override // com.google.common.graph.ValueGraph
+    public V edgeValueOrDefault(N nodeU, N nodeV, V defaultValue) {
+        return delegate().edgeValueOrDefault(nodeU, nodeV, defaultValue);
+    }
+
+    @Override // com.google.common.graph.AbstractValueGraph, com.google.common.graph.AbstractBaseGraph, com.google.common.graph.BaseGraph
+    public boolean hasEdgeConnecting(N nodeU, N nodeV) {
+        return delegate().hasEdgeConnecting(nodeU, nodeV);
+    }
+
+    @Override // com.google.common.graph.AbstractValueGraph, com.google.common.graph.AbstractBaseGraph, com.google.common.graph.BaseGraph
+    public int inDegree(N node) {
+        return delegate().inDegree(node);
+    }
+
+    @Override // com.google.common.graph.AbstractValueGraph, com.google.common.graph.AbstractBaseGraph, com.google.common.graph.BaseGraph
+    public ElementOrder<N> incidentEdgeOrder() {
+        return delegate().incidentEdgeOrder();
+    }
+
+    @Override // com.google.common.graph.BaseGraph, com.google.common.graph.Graph
+    public boolean isDirected() {
+        return delegate().isDirected();
+    }
+
+    @Override // com.google.common.graph.BaseGraph, com.google.common.graph.Graph
+    public ElementOrder<N> nodeOrder() {
+        return delegate().nodeOrder();
+    }
+
+    @Override // com.google.common.graph.BaseGraph, com.google.common.graph.Graph
+    public Set<N> nodes() {
+        return delegate().nodes();
+    }
+
+    @Override // com.google.common.graph.AbstractValueGraph, com.google.common.graph.AbstractBaseGraph, com.google.common.graph.BaseGraph
+    public int outDegree(N node) {
+        return delegate().outDegree(node);
+    }
+
+    @Override // com.google.common.graph.ValueGraph
+    public V edgeValueOrDefault(EndpointPair<N> endpoints, V defaultValue) {
+        return delegate().edgeValueOrDefault(endpoints, defaultValue);
+    }
+
+    @Override // com.google.common.graph.AbstractValueGraph, com.google.common.graph.AbstractBaseGraph, com.google.common.graph.BaseGraph
+    public boolean hasEdgeConnecting(EndpointPair<N> endpoints) {
+        return delegate().hasEdgeConnecting(endpoints);
+    }
+
+    @Override // com.google.common.graph.AbstractValueGraph, com.google.common.graph.AbstractBaseGraph, com.google.common.graph.BaseGraph, com.google.common.graph.PredecessorsFunction
+    public Set<N> predecessors(N node) {
+        return delegate().predecessors((Object) node);
+    }
+
+    @Override // com.google.common.graph.AbstractValueGraph, com.google.common.graph.AbstractBaseGraph, com.google.common.graph.BaseGraph, com.google.common.graph.SuccessorsFunction
+    public Set<N> successors(N node) {
+        return delegate().successors((Object) node);
+    }
+}

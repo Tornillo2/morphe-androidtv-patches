@@ -1,0 +1,18 @@
+package com.google.android.gms.internal.consent_sdk;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes3.dex */
+public final class zzck {
+    public static <T> T zza(T t) {
+        if (t != null) {
+            return t;
+        }
+        throw new NullPointerException("Cannot return null from a non-@Nullable @Provides method");
+    }
+
+    public static <T> void zzb(T t, Class<T> cls) {
+        if (t == null) {
+            throw new IllegalStateException(String.valueOf(cls.getCanonicalName()).concat(" must be set"));
+        }
+    }
+}

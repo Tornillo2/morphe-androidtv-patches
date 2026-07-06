@@ -1,0 +1,15 @@
+package org.apache.commons.text.lookup;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes4.dex */
+public final class EnvironmentVariableStringLookup extends AbstractStringLookup {
+    public static final EnvironmentVariableStringLookup INSTANCE = new EnvironmentVariableStringLookup();
+
+    @Override // org.apache.commons.text.lookup.StringLookup
+    public String lookup(String str) {
+        if (str != null) {
+            return System.getenv(str);
+        }
+        return null;
+    }
+}

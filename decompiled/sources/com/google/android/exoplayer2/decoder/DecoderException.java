@@ -1,0 +1,19 @@
+package com.google.android.exoplayer2.decoder;
+
+import androidx.annotation.Nullable;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes3.dex */
+public class DecoderException extends Exception {
+    public DecoderException(String str) {
+        super(str);
+    }
+
+    public DecoderException(@Nullable Throwable th) {
+        super(th);
+    }
+
+    public DecoderException(String str, @Nullable Throwable th) {
+        super(str, th);
+    }
+}

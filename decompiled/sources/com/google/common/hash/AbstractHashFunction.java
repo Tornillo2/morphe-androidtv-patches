@@ -1,0 +1,58 @@
+package com.google.common.hash;
+
+import com.google.common.base.Preconditions;
+import com.google.errorprone.annotations.Immutable;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes3.dex */
+@Immutable
+public abstract class AbstractHashFunction implements HashFunction {
+    @Override // com.google.common.hash.HashFunction
+    public HashCode hashBytes(byte[] input) {
+        return hashBytes(input, 0, input.length);
+    }
+
+    @Override // com.google.common.hash.HashFunction
+    public HashCode hashInt(int input) {
+        return newHasher(4).putInt(input).hash();
+    }
+
+    @Override // com.google.common.hash.HashFunction
+    public HashCode hashLong(long input) {
+        return newHasher(8).putLong(input).hash();
+    }
+
+    @Override // com.google.common.hash.HashFunction
+    public <T> HashCode hashObject(@ParametricNullness T instance, Funnel<? super T> funnel) {
+        return newHasher().putObject(instance, funnel).hash();
+    }
+
+    @Override // com.google.common.hash.HashFunction
+    public HashCode hashString(CharSequence input, Charset charset) {
+        return newHasher().putString(input, charset).hash();
+    }
+
+    @Override // com.google.common.hash.HashFunction
+    public HashCode hashUnencodedChars(CharSequence input) {
+        return newHasher(input.length() * 2).putUnencodedChars(input).hash();
+    }
+
+    @Override // com.google.common.hash.HashFunction
+    public Hasher newHasher(int expectedInputSize) {
+        Preconditions.checkArgument(expectedInputSize >= 0, "expectedInputSize must be >= 0 but was %s", expectedInputSize);
+        return newHasher();
+    }
+
+    @Override // com.google.common.hash.HashFunction
+    public HashCode hashBytes(byte[] input, int off, int len) {
+        Preconditions.checkPositionIndexes(off, off + len, input.length);
+        return newHasher(len).putBytes(input, off, len).hash();
+    }
+
+    @Override // com.google.common.hash.HashFunction
+    public HashCode hashBytes(ByteBuffer input) {
+        return newHasher(input.remaining()).putBytes(input).hash();
+    }
+}

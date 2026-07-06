@@ -1,0 +1,31 @@
+package com.google.android.gms.internal.measurement;
+
+import android.os.RemoteException;
+import com.google.android.gms.common.internal.Preconditions;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes3.dex */
+public final class zzcs extends zzdt {
+    public final /* synthetic */ Boolean zza;
+    public final /* synthetic */ zzee zzb;
+
+    /* JADX WARN: 'super' call moved to the top of the method (can break code semantics) */
+    public zzcs(zzee zzeeVar, Boolean bool) {
+        super(zzeeVar, true);
+        this.zzb = zzeeVar;
+        this.zza = bool;
+    }
+
+    @Override // com.google.android.gms.internal.measurement.zzdt
+    public final void zza() throws RemoteException {
+        if (this.zza != null) {
+            zzcc zzccVar = this.zzb.zzj;
+            Preconditions.checkNotNull(zzccVar);
+            zzccVar.setMeasurementEnabled(this.zza.booleanValue(), this.zzh);
+        } else {
+            zzcc zzccVar2 = this.zzb.zzj;
+            Preconditions.checkNotNull(zzccVar2);
+            zzccVar2.clearMeasurementEnabled(this.zzh);
+        }
+    }
+}

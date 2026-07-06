@@ -1,0 +1,281 @@
+package androidx.media3.exoplayer.audio;
+
+import android.media.AudioDeviceInfo;
+import android.support.v4.media.MediaBrowserCompat$MediaBrowserImplBase$$ExternalSyntheticOutline0;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.collection.MutableFloatList$$ExternalSyntheticOutline0;
+import androidx.concurrent.futures.AbstractResolvableFuture$$ExternalSyntheticOutline2;
+import androidx.media3.common.AudioAttributes;
+import androidx.media3.common.AuxEffectInfo;
+import androidx.media3.common.Format;
+import androidx.media3.common.PlaybackParameters;
+import androidx.media3.common.util.Clock;
+import androidx.media3.common.util.UnstableApi;
+import androidx.media3.exoplayer.analytics.PlayerId;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.nio.ByteBuffer;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes.dex */
+@UnstableApi
+public interface AudioSink {
+    public static final long CURRENT_POSITION_NOT_SET = Long.MIN_VALUE;
+    public static final int OFFLOAD_MODE_DISABLED = 0;
+    public static final int OFFLOAD_MODE_ENABLED_GAPLESS_NOT_REQUIRED = 2;
+    public static final int OFFLOAD_MODE_ENABLED_GAPLESS_REQUIRED = 1;
+    public static final int SINK_FORMAT_SUPPORTED_DIRECTLY = 2;
+    public static final int SINK_FORMAT_SUPPORTED_WITH_TRANSCODING = 1;
+    public static final int SINK_FORMAT_UNSUPPORTED = 0;
+
+    /* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+    public static final class AudioTrackConfig {
+        public final int bufferSize;
+        public final int channelConfig;
+        public final int encoding;
+        public final boolean offload;
+        public final int sampleRate;
+        public final boolean tunneling;
+
+        public AudioTrackConfig(int i, int i2, int i3, boolean z, boolean z2, int i4) {
+            this.encoding = i;
+            this.sampleRate = i2;
+            this.channelConfig = i3;
+            this.tunneling = z;
+            this.offload = z2;
+            this.bufferSize = i4;
+        }
+    }
+
+    /* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+    public static final class InitializationException extends Exception {
+        public final int audioTrackState;
+        public final Format format;
+        public final boolean isRecoverable;
+
+        /* JADX WARN: Illegal instructions before constructor call */
+        public InitializationException(int i, int i2, int i3, int i4, Format format, boolean z, @Nullable Exception exc) {
+            StringBuilder sbM = MutableFloatList$$ExternalSyntheticOutline0.m("AudioTrack init failed ", i, " Config(", i2, ", ");
+            AudioSink$InitializationException$$ExternalSyntheticOutline0.m(sbM, i3, ", ", i4, ") ");
+            sbM.append(format);
+            sbM.append(z ? " (recoverable)" : "");
+            super(sbM.toString(), exc);
+            this.audioTrackState = i;
+            this.isRecoverable = z;
+            this.format = format;
+        }
+    }
+
+    /* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+    @Target({ElementType.TYPE_USE})
+    @Documented
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface OffloadMode {
+    }
+
+    /* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+    @Target({ElementType.TYPE_USE})
+    @Documented
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface SinkFormatSupport {
+    }
+
+    /* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+    public static final class UnexpectedDiscontinuityException extends Exception {
+        public final long actualPresentationTimeUs;
+        public final long expectedPresentationTimeUs;
+
+        /* JADX WARN: Illegal instructions before constructor call */
+        public UnexpectedDiscontinuityException(long j, long j2) {
+            StringBuilder sbM = AbstractResolvableFuture$$ExternalSyntheticOutline2.m("Unexpected audio track timestamp discontinuity: expected ", j2, ", got ");
+            sbM.append(j);
+            super(sbM.toString());
+            this.actualPresentationTimeUs = j;
+            this.expectedPresentationTimeUs = j2;
+        }
+    }
+
+    /* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+    public static final class WriteException extends Exception {
+        public final int errorCode;
+        public final Format format;
+        public final boolean isRecoverable;
+
+        public WriteException(int i, Format format, boolean z) {
+            super(MediaBrowserCompat$MediaBrowserImplBase$$ExternalSyntheticOutline0.m("AudioTrack write failed: ", i));
+            this.isRecoverable = z;
+            this.errorCode = i;
+            this.format = format;
+        }
+    }
+
+    void configure(Format format, int i, @Nullable int[] iArr) throws ConfigurationException;
+
+    void disableTunneling();
+
+    void enableTunnelingV21();
+
+    void flush();
+
+    @Nullable
+    AudioAttributes getAudioAttributes();
+
+    long getCurrentPositionUs(boolean z);
+
+    AudioOffloadSupport getFormatOffloadSupport(Format format);
+
+    int getFormatSupport(Format format);
+
+    PlaybackParameters getPlaybackParameters();
+
+    boolean getSkipSilenceEnabled();
+
+    boolean handleBuffer(ByteBuffer byteBuffer, long j, int i) throws WriteException, InitializationException;
+
+    void handleDiscontinuity();
+
+    boolean hasPendingData();
+
+    boolean isEnded();
+
+    void pause();
+
+    void play();
+
+    void playToEndOfStream() throws WriteException;
+
+    void release();
+
+    void reset();
+
+    void setAudioAttributes(AudioAttributes audioAttributes);
+
+    void setAudioSessionId(int i);
+
+    void setAuxEffectInfo(AuxEffectInfo auxEffectInfo);
+
+    void setClock(Clock clock);
+
+    void setListener(Listener listener);
+
+    @RequiresApi(29)
+    void setOffloadDelayPadding(int i, int i2);
+
+    @RequiresApi(29)
+    void setOffloadMode(int i);
+
+    void setOutputStreamOffsetUs(long j);
+
+    void setPlaybackParameters(PlaybackParameters playbackParameters);
+
+    void setPlayerId(@Nullable PlayerId playerId);
+
+    @RequiresApi(23)
+    void setPreferredDevice(@Nullable AudioDeviceInfo audioDeviceInfo);
+
+    void setSkipSilenceEnabled(boolean z);
+
+    void setVolume(float f);
+
+    boolean supportsFormat(Format format);
+
+    /* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+    public static final class ConfigurationException extends Exception {
+        public final Format format;
+
+        public ConfigurationException(Throwable th, Format format) {
+            super(th);
+            this.format = format;
+        }
+
+        public ConfigurationException(String str, Format format) {
+            super(str);
+            this.format = format;
+        }
+    }
+
+    /* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+    public interface Listener {
+        void onAudioCapabilitiesChanged();
+
+        void onAudioSinkError(Exception exc);
+
+        void onAudioTrackInitialized(AudioTrackConfig audioTrackConfig);
+
+        void onAudioTrackReleased(AudioTrackConfig audioTrackConfig);
+
+        void onOffloadBufferEmptying();
+
+        void onOffloadBufferFull();
+
+        void onPositionAdvancing(long j);
+
+        void onPositionDiscontinuity();
+
+        void onSilenceSkipped();
+
+        void onSkipSilenceEnabledChanged(boolean z);
+
+        void onUnderrun(int i, long j, long j2);
+
+        /* JADX INFO: renamed from: androidx.media3.exoplayer.audio.AudioSink$Listener$-CC, reason: invalid class name */
+        /* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+        public final /* synthetic */ class CC {
+            public static void $default$onAudioCapabilitiesChanged(Listener listener) {
+            }
+
+            public static void $default$onOffloadBufferEmptying(Listener listener) {
+            }
+
+            public static void $default$onOffloadBufferFull(Listener listener) {
+            }
+
+            public static void $default$onSilenceSkipped(Listener listener) {
+            }
+
+            public static void $default$onAudioSinkError(Listener listener, Exception exc) {
+            }
+
+            public static void $default$onAudioTrackInitialized(Listener listener, AudioTrackConfig audioTrackConfig) {
+            }
+
+            public static void $default$onAudioTrackReleased(Listener listener, AudioTrackConfig audioTrackConfig) {
+            }
+
+            public static void $default$onPositionAdvancing(Listener listener, long j) {
+            }
+        }
+    }
+
+    /* JADX INFO: renamed from: androidx.media3.exoplayer.audio.AudioSink$-CC, reason: invalid class name */
+    /* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+    public final /* synthetic */ class CC {
+        public static void $default$release(AudioSink audioSink) {
+        }
+
+        public static void $default$setClock(AudioSink audioSink, Clock clock) {
+        }
+
+        @RequiresApi(29)
+        public static void $default$setOffloadMode(AudioSink audioSink, int i) {
+        }
+
+        public static void $default$setOutputStreamOffsetUs(AudioSink audioSink, long j) {
+        }
+
+        public static void $default$setPlayerId(AudioSink audioSink, @Nullable PlayerId playerId) {
+        }
+
+        @RequiresApi(23)
+        public static void $default$setPreferredDevice(AudioSink audioSink, @Nullable AudioDeviceInfo audioDeviceInfo) {
+        }
+
+        @RequiresApi(29)
+        public static void $default$setOffloadDelayPadding(AudioSink audioSink, int i, int i2) {
+        }
+    }
+}

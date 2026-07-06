@@ -1,0 +1,29 @@
+package com.google.android.exoplayer2.extractor.mp3;
+
+import com.google.android.exoplayer2.extractor.SeekMap;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes3.dex */
+public interface Seeker extends SeekMap {
+
+    /* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+    public static class UnseekableSeeker extends SeekMap.Unseekable implements Seeker {
+        public UnseekableSeeker() {
+            super(-9223372036854775807L);
+        }
+
+        @Override // com.google.android.exoplayer2.extractor.mp3.Seeker
+        public long getDataEndPosition() {
+            return -1L;
+        }
+
+        @Override // com.google.android.exoplayer2.extractor.mp3.Seeker
+        public long getTimeUs(long j) {
+            return 0L;
+        }
+    }
+
+    long getDataEndPosition();
+
+    long getTimeUs(long j);
+}

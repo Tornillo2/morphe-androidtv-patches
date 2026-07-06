@@ -1,0 +1,24 @@
+package com.bumptech.glide.request.target;
+
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.widget.ImageView;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes3.dex */
+public class BitmapThumbnailImageViewTarget extends ThumbnailImageViewTarget<Bitmap> {
+    public BitmapThumbnailImageViewTarget(ImageView imageView) {
+        super(imageView);
+    }
+
+    @Deprecated
+    public BitmapThumbnailImageViewTarget(ImageView imageView, boolean z) {
+        super(imageView, z);
+    }
+
+    @Override // com.bumptech.glide.request.target.ThumbnailImageViewTarget
+    public Drawable getDrawable(Bitmap bitmap) {
+        return new BitmapDrawable(((ImageView) this.view).getResources(), bitmap);
+    }
+}

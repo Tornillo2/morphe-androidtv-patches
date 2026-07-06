@@ -1,0 +1,22 @@
+package androidx.lifecycle;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes.dex */
+public class MutableLiveData<T> extends LiveData<T> {
+    public MutableLiveData(T t) {
+        super(t);
+    }
+
+    @Override // androidx.lifecycle.LiveData
+    public void postValue(T t) {
+        super.postValue(t);
+    }
+
+    @Override // androidx.lifecycle.LiveData
+    public void setValue(T t) {
+        super.setValue(t);
+    }
+
+    public MutableLiveData() {
+    }
+}

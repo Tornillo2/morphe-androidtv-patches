@@ -1,0 +1,52 @@
+package com.amazon.minerva.client.thirdparty.configuration;
+
+/* JADX INFO: compiled from: r8-map-id-11d7710e1e89b9f435e4c01ffffd6a5bc78c9d6db2bbad6c6777697ebd4119c9 */
+/* JADX INFO: loaded from: classes.dex */
+public class MetricsConfigurationConstants {
+    public static final String BITS_SIZE = "BitsSize";
+    public static final String CHECK_BATCH_OPEN_TIME_MILLIS = "CheckBatchOpenTimeMillis";
+    public static final String CONNECT_TIMEOUT_MILLIS = "ConnectTimeoutMillis";
+    public static final String CUSTOM_CONFIGURATION_FILE_NAME = "customConfiguration";
+    public static final String DEFAULT_SAMPLING_RATE = "DefaultSamplingRate";
+    public static final String DEFAULT_THROTTLE_CREDIT_HOUR = "DefaultThrottleCreditHour";
+    public static final String DEFAULT_THROTTLE_CREDIT_HOUR_HARD_LIMIT = "DefaultThrottleCreditHourHardLimit";
+    public static final String DENYLIST_BITS = "DenyListBits";
+    public static final String DENYLIST_CONFIGURATION = "DenyListConfiguration";
+    public static final String DEVO_DOMAIN = "devo";
+    public static final String EXPIRY_TIME_MILLIS = "ExpiryTimeMillis";
+    public static final String EXPLICIT_DENYLIST = "ExplicitDenylist";
+    public static final String GROUP_ID = "metricGroupId";
+    public static final String ION_FORMAT = "IonFormat";
+    public static final String KPI_REGION = "KPIRegion";
+    public static final String LOCAL_CONFIGURATION = "LocalConfiguration";
+    public static final String LOCAL_CUSTOMER_ARCUS_APP_ID = "CustomArcusAppConfigId";
+    public static final String MAIN_PROCESS_NAME = "MainProcessName";
+    public static final String MAX_BATCH_ENTRIES = "MaxBatchEntries";
+    public static final String MAX_BATCH_OPEN_TIME_MILLIS = "MaxBatchOpenTimeMillis";
+    public static final String MAX_BATCH_SIZE_BYTES = "MaxBatchSizeBytes";
+    public static final String MAX_KEY_SIZE_BYTES = "MaxKeySizeBytes";
+    public static final String MAX_KEY_VALUE_PAIR_COUNT = "MaxKeyValuePairCount";
+    public static final String MAX_METRIC_EVENT_SIZE_BYTES = "MaxMetricEventSizeBytes";
+    public static final String MAX_NUMBER_OF_BATCH_FILES = "MaxNumberOfBatchFiles";
+    public static final String MAX_STORAGE_SPACE_BYTES = "MaxStorageSpaceBytes";
+    public static final String MAX_THROTTLE_CREDIT = "MaxThrottleCredit";
+    public static final String MAX_THROTTLE_CREDIT_HARD_LIMIT = "MaxThrottleCreditHardLimit";
+    public static final String MAX_VALUE_SIZE_BYTES = "MaxValueSizeBytes";
+    public static final String MULTI_PROCESS_CONFIGURATION = "MultiProcessConfiguration";
+    public static final String PROD_DOMAIN = "prod";
+    public static final String PURGE_PERIOD_MILLIS = "PurgePeriodMillis";
+    public static final String READ_TIMEOUT_MILLIS = "ReadTimeoutMillis";
+    public static final String SAMPLING_CONFIGURATION = "SamplingConfiguration";
+    public static final String SCHEMA_ID = "schemaId";
+    public static final String SECONDARY_PROCESSES = "SecondaryProcesses";
+    public static final String STORAGE_CONFIGURATION = "StorageConfiguration";
+    public static final String THROTTLE_CONFIGURATION = "ThrottleConfiguration";
+    public static final String THROTTLE_CONFIGURATION_HARD_LIMITS = "ThrottleConfigurationHardLimits";
+    public static final String THROTTLE_SWITCH = "ThrottleSwitch";
+    public static final String THROTTLE_SWITCH_HARD_LIMIT = "ThrottleSwitchHardLimit";
+    public static final String TRANSMISSION_PERIOD_MILLIS = "TransmissionPeriodMillis";
+    public static final String UPLOAD_CONFIGURATION = "UploadConfiguration";
+    public static final String URL_ENDPOINT = "UrlEndpoint";
+    public static final String VALIDATION_CONFIGURATION = "ValidationConfiguration";
+    public static final String WAKE_LOCK_TIMEOUT_MILLIS = "WakeLockTimeoutMillis";
+}
