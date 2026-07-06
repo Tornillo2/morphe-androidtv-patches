@@ -9,6 +9,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
 
+
 /**
  * Prime Video ATV — ad suppression extension.
  *
