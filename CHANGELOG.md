@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/Tornillo2/morphe-androidtv-patches/compare/v1.0.0...v1.1.0) (2026-07-06)
+
+
+### Features
+
+* Update SkipAdsPatch.java to block all ads ([5821ae4](https://github.com/Tornillo2/morphe-androidtv-patches/commit/5821ae42d604f8af336295255c7bbe5532e8b0fa))
+
 # 1.0.0 (2026-07-05)
 
 ### Bug Fixes
