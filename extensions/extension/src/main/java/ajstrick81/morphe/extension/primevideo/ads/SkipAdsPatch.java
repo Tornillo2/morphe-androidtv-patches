@@ -239,6 +239,10 @@ public class SkipAdsPatch {
                 throw new NoConnectionError(new IOException("ads_blocked: GetPlaybackResources"));
             }
 
+            // Debug: log every URL that hits BasicNetwork (helps us find the *real*
+            // SSAI ad endpoint on your build; right now you only showed host-blocks).
+            // Low overhead: single log line.
+            Log.i(TAG, "enforceAdBlock: seen url=" + url);
 
             String host;
             try {
