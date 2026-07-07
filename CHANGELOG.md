@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/Tornillo2/morphe-androidtv-patches/compare/v1.1.0...v1.2.0) (2026-07-07)
+
+
+### Features
+
+* Add logging for URLs hitting BasicNetwork to aid ad endpoint identification ([d4b99bf](https://github.com/Tornillo2/morphe-androidtv-patches/commit/d4b99bfce906b9fee231ae866db1919ce4524a8b))
+
 # [1.1.0](https://github.com/Tornillo2/morphe-androidtv-patches/compare/v1.0.0...v1.1.0) (2026-07-06)
 
 
