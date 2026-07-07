@@ -167,13 +167,6 @@ public class SkipAdsPatch {
                 int activeAds = state.adGroupCount - state.removedAdGroupCount;
                 if (activeAds > 0) {
                     strippedGroups += activeAds;
-                    // withRemovedAdGroupCount(adGroupCount) sets
-                    // removedAdGroupCount = adGroupCount, making adGroups an
-                    // empty array. The caller's validation loop:
-                    //   for (int i = removedAdGroupCount; i < adGroupCount; i++)
-                    // evaluates to: for (int i = N; i < N; i++) — never enters.
-                    // This satisfies assertions 3 (adsId match) and 4
-                    // (isServerSideInserted) without touching them.
                     state = state.withRemovedAdGroupCount(state.adGroupCount);
                 }
                 builder.put(key, state);
@@ -184,11 +177,26 @@ public class SkipAdsPatch {
             return result;
         } catch (Exception e) {
             Log.e(TAG, "skipAllExo2AdGroups failed", e);
-            // Returning the original map here is intentional: the caller will
-            // run its own validation (assertions 1-4). That may crash, but a
-            // crash is better than silently showing ads. Log the error first.
             return adPlaybackStates;
         }
+    }
+
+    // ── Native/CURL downloader blocker ───────────────────────────────────────
+    //
+    // The logcat shows ads/manifest fetches going through a native downloader
+    // (tags: DOWNLOADER, WASM, SCRIPT) using CURL, not Volley. Those requests
+    // bypass BasicNetwork entirely. This helper centralizes the URL patterns
+    // that should be killed for ad delivery/decisioning.
+    //
+    // Add more patterns here if logcat exposes new ad endpoints.
+    // ─────────────────────────────────────────────────────────────────────────
+    private static boolean isAdUrl(String url) {
+        if (url == null) return false;
+        String lower = url.toLowerCase();
+        return lower.contains("aiv-delivery.net")                           // ad delivery CDN
+                || lower.contains("/getvideoads")                           // SSAI ad manifest
+                || lower.contains("/playbackresources")                      // SSAI schedule
+                || lower.contains("getplaybackresources");
     }
 
     // ── Volley network-layer filtering ────────────────────────────────────────
@@ -254,40 +262,43 @@ public class SkipAdsPatch {
             host = host.toLowerCase();
 
             boolean blocked =
-                    // Ad exchange / decisioning
-                    host.equals("amazon-adsystem.com")
-                    || host.endsWith(".amazon-adsystem.com")
-                    // Ad delivery network
-                    || host.equals("aiv-delivery.net")
+                    // Ad delivery network — pure ads, no content
+                    host.equals("aiv-delivery.net")
                     || host.endsWith(".aiv-delivery.net")
-                    // Weblab ad triggers (exact matches — keeps rest of weblab safe)
+                    // Weblab ad triggers — keep rest of weblab safe
                     || host.equals("zoar.triggers-v1.prod.mobile.weblab.a2z.com")
                     || host.equals("hercule.triggers-v1.prod.mobile.weblab.a2z.com")
-                    // Ad orchestration on amazonvideo.com
-                    || host.matches("threeplr[a-z0-9.-]*\\.api\\.amazonvideo\\.com")
-                    || host.matches("nit[a-z0-9.-]*\\.api\\.amazonvideo\\.com")
-                    || host.equals("s0s7.api.amazonvideo.com")
+                    // Content recommendation hosts — DO NOT block these
+                    // (they serve recommendations/browse, not ads)
+                    // || host.matches("threeplr[a-z0-9.-]*\\.api\\.amazonvideo\\.com")
+                    // || host.matches("nit[a-z0-9.-]*\\.api\\.amazonvideo\\.com")
                     // Pause-screen ad endpoint
                     || host.equals("regolith.prime-video.amazon.dev")
-                    // Ad impression pixels (FLS = Firefly Log Service)
-                    // FIXED: these were missing and let impression reports through
+                    // Ad impression pixels
                     || host.equals("fls-na.amazon.com")
                     || host.equals("fls-eu.amazon.com")
                     || host.equals("fls-fe.amazon.com")
                     || host.endsWith(".fls.amazon.com")
-                    // Header bidding / AAX ad exchange
-                    // FIXED: missing from original blocklist
+                    // Header bidding / AAX
                     || host.equals("aax-us-east.amazon.com")
                     || host.equals("aax-us-west.amazon.com")
                     || host.endsWith(".aax.amazon.com")
-                    // Amazon ad server (distinct from amazon-adsystem.com)
-                    || host.equals("mads.amazon.com")
-                    || host.endsWith(".mads.amazon.com");
+                    // Amazon ad server
+                    || isAdPlacementHost(host);
 
             if (blocked) {
                 Log.i(TAG, "enforceAdBlock: blocking host [" + host + "]");
                 throw new NoConnectionError(new IOException("ads_blocked: " + host));
             }
+    private static boolean isAdPlacementHost(String host) {
+        // Keep this conservative: only block known ad-placement hosts.
+        // If you see a host in logs that you want to block, add it here.
+        return host.equals("mads.amazon.com")
+                || host.endsWith(".mads.amazon.com")
+                || host.equals("amazon-adsystem.com")
+                || host.endsWith(".amazon-adsystem.com");
+    }
+
         } catch (NoConnectionError nce) {
             // Re-throw intentional blocks
             throw nce;

@@ -86,3 +86,30 @@ object BasicNetworkPerformRequestFingerprint : Fingerprint(
     returnType = "Lcom/android/volley/NetworkResponse;",
     accessFlags = listOf(AccessFlags.PUBLIC)
 )
+
+object MediaItemSetAdsConfigurationFingerprint : Fingerprint(
+    definingClass = "Landroidx/media3/common/MediaItem$Builder;",
+    name = "setAdsConfiguration",
+    parameters = listOf(
+        "Landroidx/media3/common/MediaItem$AdsConfiguration;"
+    ),
+    returnType = "Landroidx/media3/common/MediaItem$Builder;",
+    accessFlags = listOf(AccessFlags.PUBLIC)
+)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hook 5 — Force-clear AdsConfiguration on MediaItem.Builder
+//
+// Strips ad configuration at build time so ExoPlayer/Media3 never enters
+// ad mode. Covers the most common setAdsConfiguration setter path.
+// SAFE: mark optional so patch build doesn’t hard-fail if missing.
+// ─────────────────────────────────────────────────────────────────────────────
+object MediaItemSetAdsConfigurationFingerprint : Fingerprint(
+    definingClass = "Landroidx/media3/common/MediaItem$Builder;",
+    name = "setAdsConfiguration",
+    parameters = listOf(
+        "Landroidx/media3/common/MediaItem$AdsConfiguration;"
+    ),
+    returnType = "Landroidx/media3/common/MediaItem$Builder;",
+    accessFlags = listOf(AccessFlags.PUBLIC)
+)
