@@ -1,3 +1,11 @@
+# [1.3.0](https://github.com/Tornillo2/morphe-androidtv-patches/compare/v1.2.0...v1.3.0) (2026-07-07)
+
+
+### Features
+
+* Enhance ad suppression by adding hooks for MediaItem.AdsConfiguration and improving existing filters ([5af0021](https://github.com/Tornillo2/morphe-androidtv-patches/commit/5af002197a7efc94726d55b16cd07447c7ea9c91))
+* Improve error handling in enforceAdBlock and remove AdsConfiguration clearing hook ([a9a136c](https://github.com/Tornillo2/morphe-androidtv-patches/commit/a9a136ce7a7a144db35b3ab2bca25fe3c7e2b8ed))
+
 # [1.2.0](https://github.com/Tornillo2/morphe-androidtv-patches/compare/v1.1.0...v1.2.0) (2026-07-07)
 
 

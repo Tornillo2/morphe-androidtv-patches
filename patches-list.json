@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "appNames": {
     "com.fox.foxone": "Fox One Android TV",
     "com.peacocktv.peacockandroid": "Peacock TV Android TV",
@@ -492,7 +492,7 @@
     },
     {
       "name": "Skip ads",
-      "description": "Multi-layer ad suppression targeting the SSAI schedule, impression reporting, and the Volley network chokepoint.",
+      "description": "Multi-layer ad suppression. NOTE: SSAI hooks may be ineffective on 6.23.x if ads are handled by a custom/native pipeline. Primary defense: forced AdsConfiguration removal.",
       "use": true,
       "dependencies": [
         "BytecodePatch"
