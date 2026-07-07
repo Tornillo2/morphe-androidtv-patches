@@ -72,20 +72,5 @@ val skipAdsPatch = bytecodePatch(
             """
         )
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Hook 5 — NEW: Force-clear AdsConfiguration on MediaItem.Builder
-        //
-        // If Prime Video attaches ads via MediaItem.AdsConfiguration,
-        // strip it at build time so ExoPlayer/Media3 never enters ad mode.
-        // Targets the most common setter path.
-        // ─────────────────────────────────────────────────────────────────────
-        MediaItemSetAdsConfigurationFingerprint.method.addInstructions(
-            0,
-            """
-                const/4 v0, 0x0
-                iput-object v0, p0, Landroidx/media3/common/MediaItem$Builder;->adsConfiguration:Landroidx/media3/common/MediaItem$AdsConfiguration;
-                iput-object v0, p0, Landroidx/media3/common/MediaItem$Builder;->adsId:Ljava/lang/Object;
-            """
-        )
     }
 }

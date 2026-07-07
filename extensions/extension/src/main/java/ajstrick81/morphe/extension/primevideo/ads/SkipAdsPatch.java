@@ -290,6 +290,14 @@ public class SkipAdsPatch {
                 Log.i(TAG, "enforceAdBlock: blocking host [" + host + "]");
                 throw new NoConnectionError(new IOException("ads_blocked: " + host));
             }
+        } catch (NoConnectionError nce) {
+            // Re-throw intentional blocks
+            throw nce;
+        } catch (Exception e) {
+            Log.e(TAG, "enforceAdBlock unexpected error", e);
+        }
+    }
+
     private static boolean isAdPlacementHost(String host) {
         // Keep this conservative: only block known ad-placement hosts.
         // If you see a host in logs that you want to block, add it here.
@@ -297,13 +305,5 @@ public class SkipAdsPatch {
                 || host.endsWith(".mads.amazon.com")
                 || host.equals("amazon-adsystem.com")
                 || host.endsWith(".amazon-adsystem.com");
-    }
-
-        } catch (NoConnectionError nce) {
-            // Re-throw intentional blocks
-            throw nce;
-        } catch (Exception e) {
-            Log.e(TAG, "enforceAdBlock unexpected error", e);
-        }
     }
 }
