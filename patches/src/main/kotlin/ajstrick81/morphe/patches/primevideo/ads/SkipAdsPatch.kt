@@ -72,5 +72,35 @@ val skipAdsPatch = bytecodePatch(
             """
         )
 
+        // ─────────────────────────────────────────────────────────────────────
+        // Hook 5 — HttpURLConnection global traffic interceptor
+        //
+        // Wraps java.net.HttpURLConnection to inspect URLs before any network
+        // I/O. This catches requests made outside Volley (native downloader,
+        // OkHttp, custom clients) as long as they route through
+        // HttpURLConnection directly or via URL.openConnection().
+        // The wrapper delegates all calls to the original connection so
+        // behavior is unchanged for allowed traffic.
+        // ─────────────────────────────────────────────────────────────────────
+        HttpURLConnectionSetRequestPropertyFingerprint.method.addInstructions(
+            0,
+            """
+                # Intercept the URL on first setRequestProperty/getOutputStream
+                # and short-circuit if enforceAdBlock() throws.
+                invoke-static {p0}, Lajstrick81/morphe/extension/primevideo/ads/SkipAdsPatch;->enforceAdBlock(Ljava/net/HttpURLConnection;)Z
+                if-eqz v0, :pass_through
+                # Blocked: close and return a fake error response
+                invoke-direct {p0}, Ljava/net/HttpURLConnection;->getResponseCode()I
+                move-result v0
+                # Return error HTTP code (e.g., 403/503) so caller sees a failure
+                const/16 v0, 0x1f7  # 503 Service Unavailable
+                goto :return
+                :pass_through
+                # Continue with original connection as-is
+                nop
+                :return
+            """
+        )
+
     }
 }
