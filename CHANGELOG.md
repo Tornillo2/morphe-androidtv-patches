@@ -1,3 +1,11 @@
+# [1.4.0](https://github.com/Tornillo2/morphe-androidtv-patches/compare/v1.3.0...v1.4.0) (2026-07-11)
+
+
+### Features
+
+* Add global traffic interceptor for HttpURLConnection to enhance ad blocking ([9c06259](https://github.com/Tornillo2/morphe-androidtv-patches/commit/9c062596303807282b5b263fc43d06044cc1003d))
+* Remove global traffic interceptor for HttpURLConnection from SkipAdsPatch ([d32a3cc](https://github.com/Tornillo2/morphe-androidtv-patches/commit/d32a3ccb2ec2c8fc238a26b84648dbb68421483d))
+
 # [1.3.0](https://github.com/Tornillo2/morphe-androidtv-patches/compare/v1.2.0...v1.3.0) (2026-07-07)
 
 
